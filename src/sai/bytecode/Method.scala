@@ -28,6 +28,12 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
       
   def exitPoint = instructions last    
   
+  def firstInstruction = instructions(1)
+  
+  def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Option[Instruction] = 
+    instructions find (_ encapsulates bcelInstruction)
+  
+  
   def name = bcelMethod getName
   override def toString = name
   
