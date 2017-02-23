@@ -23,5 +23,5 @@ case class OpStack(stack: List[Slot]) {
 }
 
 object OpStack {
-  def apply = new OpStack(Nil)
+  def apply() = new OpStack(Nil)
 }
