@@ -57,7 +57,8 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
     else 
       argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> new ThisObject(clazz name))
   
-        
+  def maxLocals = bcelMethod.getCode.getMaxLocals    
+      
   def name = bcelMethod getName
   override def toString = name
   
