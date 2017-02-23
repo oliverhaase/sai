@@ -30,8 +30,11 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
   
   def firstInstruction = instructions(1)
   
-  def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Option[Instruction] = 
-    instructions find (_ encapsulates bcelInstruction)
+  def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Instruction = 
+    instructions find (_ encapsulates bcelInstruction) match {
+      case Some(i) => i
+      case None => throw new RuntimeException("instruction not found")
+    }
   
   
   def name = bcelMethod getName

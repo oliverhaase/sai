@@ -7,17 +7,25 @@ import sai.vm.State
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, 
     method: Method) {
  
-  private def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
+  protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
     
   def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     bcelInstruction == this.bcelInstruction
 
-  def next: Option[Instruction] = 
+  def next: Instruction = 
       if (bcelInstruction.getNext == null) 
-         Some(method exitPoint) 
+         method exitPoint 
       else lookupInstruction(bcelInstruction getNext)
   
+  def successors: List[Instruction] = bcelInstruction.getInstruction match {
+    case i: org.apache.bcel.generic.ReturnInstruction => 
+        List(method exitPoint)
+    case i: org.apache.bcel.generic.ATHROW => 
+        List(method exitPoint)
+    case _ => List(next)
+  }    
+      
   def predecessors: Set[Instruction] = Set()
     
   def statesIn: Set[State] = 
@@ -31,7 +39,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   override def toString = bcelInstruction.getInstruction.getName
   
   def print {
-    println("-" + toString + "-> " + next)
+    println("-" + toString + "-> " + successors)
   }
 }
 
