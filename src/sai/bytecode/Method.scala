@@ -7,6 +7,9 @@ import org.apache.bcel.classfile.JavaClass
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
+import sai.vm.ObjectNode
+import sai.vm.ParameterObject
+import sai.vm.ThisObject
 
 class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGen, clazz: Clazz) {  
   val isAbstract = bcelMethod isAbstract
@@ -37,6 +40,24 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
     }
   
   
+  private def argReferences(index : Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectNode] = 
+    if ( bcelArgs == Nil ) 
+      Map()
+    else
+      bcelArgs head match {
+      case basicType: org.apache.bcel.generic.BasicType => 
+        argReferences(index + basicType.getSize, bcelArgs tail)
+      case referenceType: org.apache.bcel.generic.ReferenceType =>
+        argReferences(index + 1, bcelArgs tail) + (index -> new ParameterObject(referenceType))
+    }
+        
+  val inputReferences: Map[Int, ObjectNode] = 
+    if ( bcelMethod isStatic ) 
+      argReferences(0, bcelMethod.getArgumentTypes.toList)
+    else 
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> new ThisObject(clazz name))
+  
+        
   def name = bcelMethod getName
   override def toString = name
   
@@ -49,7 +70,7 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
   
   
   def print {
-    println("." + toString)
+    println("." + toString + " " + inputReferences)
     instructions.foreach(instruction => instruction print)
   }
   
