@@ -39,7 +39,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   override def toString = bcelInstruction.getInstruction.getName
   
   def print {
-    println("-" + toString + "-> " + successors)
+    println("-" + toString + "-> " + statesOut)
   }
 }
 
