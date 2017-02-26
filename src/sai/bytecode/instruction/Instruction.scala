@@ -2,7 +2,7 @@ package sai.bytecode.instruction
 
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
-import sai.vm.State
+import sai.vm._
 
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, 
     method: Method) {
@@ -32,9 +32,17 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     for (predecessor <- predecessors;
         predState <- predecessor.statesOut) yield predState
   
-  private def transfer(states: Set[State]) = states 
+  protected def transferLocalVars(localVars: LocalVars) = localVars      
+  protected def transferOpStack(opStack: OpStack) = opStack      
+  protected def transferEdges(edges: FieldEdges) = edges      
+        
+  protected def transfer(state: State): State = 
+    State(transferLocalVars(state.localVars), 
+        transferOpStack(state.opStack), 
+        transferEdges(state.edges))
  
-  def statesOut = transfer(statesIn) 
+  def statesOut: Set[State] = 
+    for ( stateIn <- statesIn ) yield transfer(stateIn) 
   
   override def toString = bcelInstruction.getInstruction.getName
   
