@@ -1,6 +1,7 @@
 package sai.bytecode.instruction
 
 import org.apache.bcel.generic.ConstantPoolGen
+import org.apache.bcel.generic.InstructionHandle
 import sai.bytecode.Method
 import sai.vm._
 
@@ -24,9 +25,13 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     case i: org.apache.bcel.generic.ATHROW => 
         List(method exitPoint)
     case _ => List(next)
-  }    
-      
-  def predecessors: Set[Instruction] = Set()
+  }
+
+  def predecessors: Set[Instruction] = {
+    val (predecessors, _) = method.instructions.span(_ != this)
+    predecessors.toSet
+  }
+
     
   def statesIn: Set[State] = 
     for (predecessor <- predecessors;
@@ -57,7 +62,5 @@ object Instruction {
       case bi: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
       case _ => new Instruction(bcelInstruction, cpg, method)
     }
-    
-    
 }
 

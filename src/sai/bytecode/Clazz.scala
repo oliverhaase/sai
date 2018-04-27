@@ -11,7 +11,9 @@ class Clazz(val name: String) {
   val methods: List[Method] = 
     for ( bcelMethod <-  bcelClass.getMethods.toList ) yield new Method(bcelMethod, cpg, this)
 
-  private def getMainMethod = methods find (_.name == "main")
+  private def getMainMethod = method("main")
+
+  def method(name: String): Option[Method] = methods.find(_.name == name)
       
   def interpret = getMainMethod match {
       case Some(s) => s interpret  
