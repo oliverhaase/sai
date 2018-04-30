@@ -1,7 +1,6 @@
 package sai.bytecode.instruction
 
 import org.apache.bcel.generic.ConstantPoolGen
-import org.apache.bcel.generic.InstructionHandle
 import sai.bytecode.Method
 import sai.vm._
 
@@ -10,8 +9,8 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
  
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
-    
-  def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
+
+  def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) =
     bcelInstruction == this.bcelInstruction
 
   def next: Instruction = 
@@ -22,17 +21,14 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
     case i: org.apache.bcel.generic.ReturnInstruction => 
         List(method exitPoint)
-    case i: org.apache.bcel.generic.ATHROW => 
+    case i: org.apache.bcel.generic.ATHROW =>
+      // TODO: this is not true if the exception is caught!
         List(method exitPoint)
     case _ => List(next)
   }
 
-  def predecessors: Set[Instruction] = {
-    val (predecessors, _) = method.instructions.span(_ != this)
-    predecessors.toSet
-  }
+  def predecessors: Set[Instruction] = Set(method.lookup(bcelInstruction.getPrev))
 
-    
   def statesIn: Set[State] = 
     for (predecessor <- predecessors;
         predState <- predecessor.statesOut) yield predState
