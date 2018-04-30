@@ -27,7 +27,12 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     case _ => List(next)
   }
 
-  def predecessors: Set[Instruction] = Set(method.lookup(bcelInstruction.getPrev))
+  def predecessors: Set[Instruction] = {
+    val predecessors = for {
+      instruction <- method.instructions if instruction.successors.contains(this)
+    } yield instruction
+    predecessors.toSet
+  }
 
   def statesIn: Set[State] = 
     for (predecessor <- predecessors;

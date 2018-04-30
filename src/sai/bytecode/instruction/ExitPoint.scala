@@ -8,7 +8,5 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
    override def successors: List[Instruction] = List()
 
-   override def predecessors: Set[Instruction] = method.preExitPoints
-
    override def toString = "exit point"
 }
