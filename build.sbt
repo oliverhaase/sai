@@ -8,6 +8,9 @@ scalaVersion := "2.12.5"
 scalaSource in Compile := baseDirectory.value / "src/sai"
 scalaSource in Test := baseDirectory.value / "src/test"
 
+// show full warning information
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+
 // compile java example classes which are used in the scala tests
 unmanagedSourceDirectories in Test += baseDirectory.value / "src/test/artifacts"
 
