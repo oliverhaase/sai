@@ -7,7 +7,7 @@ object Main {
   def main(args: Array[String]) = {
     val clazz = new Clazz("sai.TestClass")
     Program.classes ::= clazz 
-    clazz interpret
+    clazz.interpret
   }
     
 }

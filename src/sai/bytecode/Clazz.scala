@@ -16,7 +16,7 @@ class Clazz(val name: String) {
   def method(name: String): Option[Method] = methods.find(_.name == name)
       
   def interpret = getMainMethod match {
-      case Some(s) => s interpret  
+      case Some(s) => s.interpret
       case None => println("class " + name + " doesn't contain main method")
     }
   

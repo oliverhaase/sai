@@ -10,7 +10,7 @@ case class OpStack(stack: List[Slot]) {
     else
       this
       
-  def pop: OpStack = new OpStack(stack tail)
+  def pop: OpStack = new OpStack(stack.tail)
   
   def pop(n: Int): OpStack = 
     if ( n > 0 )
@@ -18,7 +18,7 @@ case class OpStack(stack: List[Slot]) {
     else 
       this
       
-  def top = stack head    
+  def top = stack.head
    
 }
 

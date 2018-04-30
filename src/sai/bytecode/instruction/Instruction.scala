@@ -15,15 +15,15 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
 
   def next: Instruction = 
       if (bcelInstruction.getNext == null) 
-         method exitPoint 
-      else lookupInstruction(bcelInstruction getNext)
+         method.exitPoint
+      else lookupInstruction(bcelInstruction.getNext)
   
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
     case i: org.apache.bcel.generic.ReturnInstruction => 
-        List(method exitPoint)
+        List(method.exitPoint)
     case i: org.apache.bcel.generic.ATHROW =>
       // TODO: this is not true if the exception is caught!
-        List(method exitPoint)
+        List(method.exitPoint)
     case _ => List(next)
   }
 
@@ -54,7 +54,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
 
 object Instruction {
   def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) = 
-    bcelInstruction getInstruction match {
+    bcelInstruction.getInstruction match {
       case bi: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
       case _ => new Instruction(bcelInstruction, cpg, method)
     }

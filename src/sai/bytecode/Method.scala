@@ -12,8 +12,8 @@ import sai.vm.ParameterObject
 import sai.vm.ThisObject
 
 class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGen, clazz: Clazz) {
-  val isAbstract = bcelMethod isAbstract
-  val isNative = bcelMethod isNative
+  val isAbstract = bcelMethod.isAbstract
+  val isNative = bcelMethod.isNative
   val isDefined = !isAbstract && !isNative
 
   private def body(bcelInstructions: List[InstructionHandle]) =
@@ -29,7 +29,7 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
     else
       Nil
 
-  def exitPoint = instructions last
+  def exitPoint = instructions.last
 
   /**
    * @return Set of instructions that point to the methods exit point.
@@ -51,25 +51,25 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
     if ( bcelArgs == Nil )
       Map()
     else
-      bcelArgs head match {
+      bcelArgs.head match {
       case basicType: org.apache.bcel.generic.BasicType =>
-        argReferences(index + basicType.getSize, bcelArgs tail)
+        argReferences(index + basicType.getSize, bcelArgs.tail)
       case referenceType: org.apache.bcel.generic.ReferenceType =>
-        argReferences(index + 1, bcelArgs tail) + (index -> new ParameterObject(referenceType))
+        argReferences(index + 1, bcelArgs.tail) + (index -> new ParameterObject(referenceType))
     }
 
   val inputReferences: Map[Int, ObjectNode] =
-    if ( bcelMethod isStatic )
+    if ( bcelMethod.isStatic )
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> new ThisObject(clazz name))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> new ThisObject(clazz.name))
 
   def maxLocals = bcelMethod.getCode.getMaxLocals
 
-  def name = bcelMethod getName
+  def name = bcelMethod.getName
   override def toString = name
 
-  def summary = exitPoint statesOut
+  def summary = exitPoint.statesOut
 
   def interpret {
       summary
@@ -79,7 +79,7 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
 
   def print {
     println("." + toString + " " + inputReferences)
-    instructions.foreach(instruction => instruction print)
+    instructions.foreach(instruction => instruction.print)
   }
 
 }
