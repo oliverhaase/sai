@@ -1,9 +1,12 @@
 package sai.bytecode
 
+import org.apache.bcel.Const
+import org.apache.bcel.classfile.CodeException
+import org.apache.bcel.classfile.Utility
 import org.apache.bcel.generic.ConstantPoolGen
 import org.apache.bcel.generic.InstructionList
 import org.apache.bcel.generic.InstructionHandle
-import org.apache.bcel.classfile.JavaClass
+import org.apache.bcel.generic.ExceptionThrower
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
@@ -15,6 +18,43 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
   val isAbstract = bcelMethod.isAbstract
   val isNative = bcelMethod.isNative
   val isDefined = !isAbstract && !isNative
+
+  /**
+   * Retrieve all instructions that handle exceptions thrown by the given instruction.
+   * @param instruction which may throw exceptions
+   * @return Set of instructions which handle potential exceptions.
+   */
+  def getCatchInstructions(instruction: InstructionHandle): Set[Instruction] = {
+
+    // returns the first instruction within the catch block
+    def getCatchInstruction(exceptionHandler: CodeException) = {
+      instructions.find(_.pc.contains(exceptionHandler.getHandlerPC))
+        .getOrElse(throw new RuntimeException(s"instruction for position ${instruction.getPosition} not found"))
+    }
+
+    // check if an exception handler is able to catch a specific exception
+    def canCatch(exceptionHandler: CodeException, exception: Class[_]) = {
+      val tryRange = Range(exceptionHandler.getStartPC, exceptionHandler.getEndPC)
+      tryRange.contains(instruction.getPosition) && {
+        val classContent = cpg.getConstantPool.getConstantString(exceptionHandler.getCatchType, Const.CONSTANT_Class)
+        val className = Utility.compactClassName(classContent, /* remove prefix = */false)
+        val handlerClass = Class.forName(className)
+        handlerClass.isAssignableFrom(exception)
+      }
+    }
+
+    instruction.getInstruction match {
+      case thrower: ExceptionThrower =>
+        val exceptionHandlers = bcelMethod.getCode.getExceptionTable
+        thrower.getExceptions.foldLeft(Set[Instruction]()) { (acc, exception) =>
+          val maybeHandler = exceptionHandlers.collectFirst {
+            case exceptionHandler if canCatch(exceptionHandler, exception) => getCatchInstruction(exceptionHandler)
+          }
+          acc + maybeHandler.getOrElse(exitPoint)
+        }
+      case _ => Set()
+    }
+  }
 
   private def body(bcelInstructions: List[InstructionHandle]) =
      for ( bcelInstruction <- bcelInstructions )
@@ -30,13 +70,6 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
       Nil
 
   def exitPoint = instructions.last
-
-  /**
-   * @return Set of instructions that point to the methods exit point.
-   */
-  def preExitPoints: Set[Instruction] = (for {
-      i <- instructions if !i.isInstanceOf[ExitPoint] && i.next.isInstanceOf[ExitPoint]
-    } yield i).toSet
 
   def firstInstruction = instructions(1)
 

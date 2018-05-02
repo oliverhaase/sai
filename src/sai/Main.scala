@@ -6,8 +6,12 @@ import sai.bytecode.Clazz
 object Main {
   def main(args: Array[String]) = {
     val clazz = new Clazz("sai.TestClass")
-    Program.classes ::= clazz 
+    Program.classes ::= clazz
     clazz.interpret
+
+    val myFileReader = new Clazz("sai.MyFileReader")
+    val readIntoArray = myFileReader.method("readIntoArray").get
+    readIntoArray.interpret
   }
     
 }

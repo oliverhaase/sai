@@ -6,7 +6,12 @@ import sai.vm._
 
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, 
     method: Method) {
- 
+
+  final def pc: Option[Int] =
+    if (bcelInstruction == null)
+      None
+    else Some(bcelInstruction.getPosition)
+
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
 
@@ -19,15 +24,16 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
       else lookupInstruction(bcelInstruction.getNext)
   
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
-    case i: org.apache.bcel.generic.ReturnInstruction => 
-        List(method.exitPoint)
-    case i: org.apache.bcel.generic.ATHROW =>
-      // TODO: this is not true if the exception is caught!
-        List(method.exitPoint)
+    case _: org.apache.bcel.generic.ReturnInstruction =>
+      val catchInstructions = method.getCatchInstructions(bcelInstruction)
+      (catchInstructions + method.exitPoint).toList
+    case _: org.apache.bcel.generic.ExceptionThrower =>
+      val catchInstructions = method.getCatchInstructions(bcelInstruction)
+      (catchInstructions + next).toList
     case _ => List(next)
   }
 
-  def predecessors: Set[Instruction] = {
+  final def predecessors: Set[Instruction] = {
     val predecessors = for {
       instruction <- method.instructions if instruction.successors.contains(this)
     } yield instruction
