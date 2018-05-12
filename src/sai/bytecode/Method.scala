@@ -1,5 +1,8 @@
 package sai.bytecode
 
+import scala.collection.mutable
+
+import cg.ConnectionGraph
 import org.apache.bcel.Const
 import org.apache.bcel.classfile.CodeException
 import org.apache.bcel.classfile.Utility
@@ -39,19 +42,22 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
         val classContent = cpg.getConstantPool.getConstantString(exceptionHandler.getCatchType, Const.CONSTANT_Class)
         val className = Utility.compactClassName(classContent, /* remove prefix = */false)
         val handlerClass = Class.forName(className)
-        handlerClass.isAssignableFrom(exception)
+        val isAssignable = handlerClass.isAssignableFrom(exception)
+        isAssignable
       }
     }
 
     instruction.getInstruction match {
       case thrower: ExceptionThrower =>
+        val exceptions = thrower.getExceptions
         val exceptionHandlers = bcelMethod.getCode.getExceptionTable
-        thrower.getExceptions.foldLeft(Set[Instruction]()) { (acc, exception) =>
+        val catchInstructions = exceptions.foldLeft(Set.empty[Instruction]) { (acc, exception) =>
           val maybeHandler = exceptionHandlers.collectFirst {
             case exceptionHandler if canCatch(exceptionHandler, exception) => getCatchInstruction(exceptionHandler)
           }
           acc + maybeHandler.getOrElse(exitPoint)
         }
+        catchInstructions
       case _ => Set()
     }
   }
@@ -71,14 +77,13 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
 
   def exitPoint = instructions.last
 
+  def entryPoint = instructions.head
+
   def firstInstruction = instructions(1)
 
   def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Instruction =
-    instructions find (_ encapsulates bcelInstruction) match {
-      case Some(i) => i
-      case None => throw new RuntimeException("instruction not found")
-    }
-
+    instructions.find(_ encapsulates bcelInstruction)
+      .getOrElse(throw new RuntimeException("instruction not found"))
 
   private def argReferences(index : Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectNode] =
     if ( bcelArgs == Nil )
@@ -102,19 +107,57 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, cpg: ConstantPoolGe
   def name = bcelMethod.getName
   override def toString = name
 
-  def summary = exitPoint.statesOut
+  lazy val summary: ConnectionGraph = {
+    val worklist = buildWorklist()
 
-  def interpret {
-      summary
-      print
+    // store the out state for each instruction
+    val outStates = mutable.Map.empty[Instruction, ConnectionGraph]
+    // each out state is initialized with an empty connection graph
+    outStates ++= worklist.map(instruction => (instruction, ConnectionGraph.empty())).toMap
+
+    // we use an upper bound in case the out states don't converge (i.e. we never reach a fixed point)
+    val upperBound = 10 * worklist.size
+    var iteration = 0
+
+    while (worklist.nonEmpty && iteration < upperBound) {
+      iteration += 1
+      val head = worklist.remove(0)
+      val stateBefore = outStates(head)
+      val inStates = head.predecessors.map(predecessor => outStates(predecessor))
+      val outState = head.transfer(inStates)
+      outStates(head) = outState
+
+      // out state changed
+      if (stateBefore != outState) {
+        // => we have to recalculate the out states for each successor
+        worklist ++= head.successors.filterNot(worklist.contains)
+      }
     }
 
+    val summary = outStates.values.reduce(_ merge _)
+    summary
+  }
+
+  private def buildWorklist(): mutable.Buffer[Instruction] = {
+    val worklist = mutable.Buffer.empty[Instruction]
+    def visit(instruction: Instruction): Unit = {
+      worklist += instruction
+      val unvisited = instruction.predecessors.filterNot(worklist.contains)
+      unvisited.foreach(visit)
+    }
+    visit(exitPoint)
+    worklist
+  }
+
+  def interpret {
+    println(summary)
+    print
+  }
 
   def print {
     println("." + toString + " " + inputReferences)
     instructions.foreach(instruction => instruction.print)
   }
-
 }
 
 

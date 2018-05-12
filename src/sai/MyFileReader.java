@@ -24,17 +24,14 @@ public class MyFileReader {
             // may throw IOException
             String line = br.readLine();
 
-            // may throw NullPointerException, ArrayIndexOutOfBoundsException, ArrayStoreException
-            array[i] = line;
-
             // abstract loop analysis is not supported yet!
-            /*while (line != null) {
+            while (line != null) {
                 // may throw NullPointerException, ArrayIndexOutOfBoundsException, ArrayStoreException
                 array[i] = line;
                 i++;
                 // may throw IOException
                 line = br.readLine();
-            }*/
+            }
 
             // may throw IOException
             br.close();

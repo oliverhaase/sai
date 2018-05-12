@@ -1,10 +1,14 @@
 package sai.bytecode.instruction
 
+import scala.annotation.tailrec
+
+import cg.ConnectionGraph
+import cg.ObjectNode
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import sai.vm._
 
-class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, 
+class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
     method: Method) {
 
   final def pc: Option[Int] =
@@ -24,9 +28,6 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
       else lookupInstruction(bcelInstruction.getNext)
   
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
-    case _: org.apache.bcel.generic.ReturnInstruction =>
-      val catchInstructions = method.getCatchInstructions(bcelInstruction)
-      (catchInstructions + method.exitPoint).toList
     case _: org.apache.bcel.generic.ExceptionThrower =>
       val catchInstructions = method.getCatchInstructions(bcelInstruction)
       (catchInstructions + next).toList
@@ -34,16 +35,15 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   }
 
   final def predecessors: Set[Instruction] = {
-    val predecessors = for {
-      instruction <- method.instructions if instruction.successors.contains(this)
-    } yield instruction
-    predecessors.toSet
+    method.instructions.filter(_.successors.contains(this)).toSet
   }
 
-  def statesIn: Set[State] = 
-    for (predecessor <- predecessors;
-        predState <- predecessor.statesOut) yield predState
-  
+  def transfer(inStates: Set[ConnectionGraph]): ConnectionGraph = {
+    val inState = inStates.fold(ConnectionGraph.empty())(_ merge _)
+    val outState = inState
+    outState
+  }
+
   protected def transferLocalVars(localVars: LocalVars) = localVars      
   protected def transferOpStack(opStack: OpStack) = opStack      
   protected def transferEdges(edges: FieldEdges) = edges      
@@ -52,14 +52,11 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     State(transferLocalVars(state.localVars), 
         transferOpStack(state.opStack), 
         transferEdges(state.edges))
- 
-  def statesOut: Set[State] = 
-    for ( stateIn <- statesIn ) yield transfer(stateIn) 
-  
+
   override def toString = bcelInstruction.getInstruction.getName
   
   def print {
-    println("-" + toString + "-> " + statesOut)
+    println("-" + toString + "-> ")
   }
 }
 

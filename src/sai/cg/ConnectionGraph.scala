@@ -50,5 +50,5 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge]) {
 }
 
 object ConnectionGraph {
-  def apply(): ConnectionGraph = new ConnectionGraph(Set(), Set())
+  def empty(): ConnectionGraph = new ConnectionGraph(Set(), Set())
 }
