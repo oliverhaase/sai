@@ -1,5 +1,7 @@
 package cg
 
+import scala.annotation.tailrec
+
 object EscapeStates extends Enumeration {
   type EscapeState = Value
 
@@ -7,6 +9,7 @@ object EscapeStates extends Enumeration {
   val ArgEscape: EscapeState = Value(1)
   val NoEscape: EscapeState = Value(2, "⊤")
 
+  @tailrec
   def merge(es: EscapeState, es2: EscapeState): EscapeState = (es, es2) match {
     case (`es`, `es`) => es
     case (`es`, NoEscape) => es
