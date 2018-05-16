@@ -1,15 +1,14 @@
 package sai.bytecode.instruction
 
-import scala.annotation.tailrec
-
+import bytecode.instruction.InstructionHandler
 import cg.ConnectionGraph
-import cg.ObjectNode
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import sai.vm._
+import vm.Frame
 
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
-    method: Method) {
+    val method: Method) {
 
   final def pc: Option[Int] =
     if (bcelInstruction == null)
@@ -22,12 +21,17 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) =
     bcelInstruction == this.bcelInstruction
 
+  def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
+    this.bcelInstruction != null && bcelInstruction == this.bcelInstruction.getInstruction
+
   def next: Instruction = 
       if (bcelInstruction.getNext == null) 
          method.exitPoint
       else lookupInstruction(bcelInstruction.getNext)
   
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
+    case _: org.apache.bcel.generic.RETURN =>
+      List(method.exitPoint)
     case _: org.apache.bcel.generic.ExceptionThrower =>
       val catchInstructions = method.getCatchInstructions(bcelInstruction)
       (catchInstructions + next).toList
@@ -38,25 +42,36 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     method.instructions.filter(_.successors.contains(this)).toSet
   }
 
-  def transfer(inStates: Set[ConnectionGraph]): ConnectionGraph = {
-    val inState = inStates.fold(ConnectionGraph.empty())(_ merge _)
-    val outState = inState
+  def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
+    val inState = inStates.reduce(_ merge _)
+    val outState = InstructionHandler.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
     outState
   }
 
-  protected def transferLocalVars(localVars: LocalVars) = localVars      
-  protected def transferOpStack(opStack: OpStack) = opStack      
-  protected def transferEdges(edges: FieldEdges) = edges      
-        
-  protected def transfer(state: State): State = 
-    State(transferLocalVars(state.localVars), 
-        transferOpStack(state.opStack), 
-        transferEdges(state.edges))
-
-  override def toString = bcelInstruction.getInstruction.getName
+  override def toString = {
+    val info = bcelInstruction.getInstruction match {
+      case i: org.apache.bcel.generic.StoreInstruction =>
+        Map("index" -> i.getIndex, "tag" -> i.getCanonicalTag)
+      case i: org.apache.bcel.generic.LoadInstruction =>
+        Map("index" -> i.getIndex, "tag" -> i.getCanonicalTag)
+      case i: org.apache.bcel.generic.InvokeInstruction =>
+        Map("class name" -> i.getClassName(cpg), "method name" -> i.getMethodName(cpg))
+      case i: org.apache.bcel.generic.FieldInstruction =>
+        Map("field name" -> i.getFieldName(cpg))
+      case i: org.apache.bcel.generic.RETURN =>
+        Map("return type" -> i.getType)
+      case i: org.apache.bcel.generic.NEW =>
+        Map("type" -> i.getLoadClassType(cpg))
+      case i: org.apache.bcel.generic.DUP =>
+        Map("length" -> i.getLength)
+      case _ => ""
+    }
+    bcelInstruction.getInstruction.getName + " -> info: " + info.toString
+  }
   
   def print {
-    println("-" + toString + "-> ")
+    val pos = if (bcelInstruction == null) " " else bcelInstruction.getPosition
+    println(pos + ": " + toString)
   }
 }
 
