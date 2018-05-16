@@ -15,6 +15,7 @@ class MethodTest extends FlatSpec with Matchers {
   val add: Method = clazz.method("add").get
   val meaningOfLife: Method = clazz.method("meaningOfLife").get
 
+  /*
   "A Method" should "return a summary state with no local variables if a static void method without parameters is called" in {
     val states = calcNothing.summary
     states.size shouldBe 1
@@ -48,5 +49,6 @@ class MethodTest extends FlatSpec with Matchers {
     add.exitPoint shouldBe an [ExitPoint]
     add.instructions.count(_.isInstanceOf[ExitPoint]) shouldBe 1
   }
+  */
 
 }

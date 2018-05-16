@@ -4,14 +4,22 @@ import sai.bytecode.Program
 import sai.bytecode.Clazz
 
 object Main {
-  def main(args: Array[String]) = {
+
+  def main(args: Array[String]): Unit = {
     val clazz = new Clazz("sai.TestClass")
     Program.classes ::= clazz
-    clazz.interpret
+    clazz.interpret()
 
     val myFileReader = new Clazz("sai.MyFileReader")
-    val readIntoArray = myFileReader.method("readIntoArray").get
-    readIntoArray.interpret
+    myFileReader.method("readIntoArray").get.interpret
+
+    val basicStatements = new Clazz("sai.BasicStatements")
+    basicStatements.method("<init>").get.interpret
+    basicStatements.method("<clinit>").get.interpret
+    basicStatements.method("localAssignment").get.interpret
+    basicStatements.method("instanceAssignment").get.interpret
+    basicStatements.method("staticAssignment").get.interpret
+    basicStatements.method("localDefer").get.interpret
   }
-    
+
 }

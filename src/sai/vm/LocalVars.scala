@@ -9,7 +9,7 @@ case class LocalVars(localVars: List[Slot]) {
 }
 
 object LocalVars {
-  def apply(maxLocals: Int, argObjects: Map[Int, ObjectNode]): LocalVars = {
+  def apply(maxLocals: Int, argObjects: Map[Int, ObjectRef]): LocalVars = {
     val builder:  Array[Slot] = new Array(maxLocals)
 
     for ( index <- 0 until maxLocals )
@@ -17,7 +17,7 @@ object LocalVars {
         builder(index) = argObjects.get(index).orNull
       else 
         builder(index) = PrimitiveSlot
-    
+
     new LocalVars(builder.toList)
   }
 }
