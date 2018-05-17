@@ -4,7 +4,6 @@ import bytecode.instruction.InstructionHandler
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
-import sai.vm._
 import vm.Frame
 
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
@@ -14,6 +13,8 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     if (bcelInstruction == null)
       None
     else Some(bcelInstruction.getPosition)
+
+  def lineNumber = method.getLineNumber(bcelInstruction.getInstruction)
 
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
@@ -30,17 +31,15 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
       else lookupInstruction(bcelInstruction.getNext)
   
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
-    case _: org.apache.bcel.generic.RETURN =>
-      List(method.exitPoint)
-    case _: org.apache.bcel.generic.ExceptionThrower =>
-      val catchInstructions = method.getCatchInstructions(bcelInstruction)
-      (catchInstructions + next).toList
+    case _: org.apache.bcel.generic.RETURN => List(method.exitPoint)
     case _ => List(next)
   }
 
-  final def predecessors: Set[Instruction] = {
-    method.instructions.filter(_.successors.contains(this)).toSet
-  }
+  private def isInsideTryBlock = method.isInsideTryBlock(this)
+
+  final def predecessors: Set[Instruction] =
+    for (candidate <- method.instructions.toSet if candidate.successors.contains(this))
+      yield candidate
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)

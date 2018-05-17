@@ -2,6 +2,7 @@ package sai.bytecode
 
 import scala.collection.mutable
 
+import bytecode.BasicBlock
 import cg.ConnectionGraph
 import org.apache.bcel.Const
 import org.apache.bcel.classfile.CodeException
@@ -13,57 +14,18 @@ import org.apache.bcel.generic.ExceptionThrower
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
+import sai.bytecode.instruction.ControlFlowInstruction
 import sai.vm.ObjectRef
 import vm.Frame
 
-class Method (bcelMethod : org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
+class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
   val isAbstract = bcelMethod.isAbstract
   val isNative = bcelMethod.isNative
   val isDefined = !isAbstract && !isNative
 
-  /**
-   * Retrieve all instructions that handle exceptions thrown by the given instruction.
-   * @param instruction which may throw exceptions
-   * @return Set of instructions which handle potential exceptions.
-   */
-  def getCatchInstructions(instruction: InstructionHandle): Set[Instruction] = {
-
-    // returns the first instruction within the catch block
-    def getCatchInstruction(exceptionHandler: CodeException) = {
-      instructions.find(_.pc.contains(exceptionHandler.getHandlerPC))
-        .getOrElse(throw new RuntimeException(s"instruction for position ${instruction.getPosition} not found"))
-    }
-
-    // check if an exception handler is able to catch a specific exception
-    def canCatch(exceptionHandler: CodeException, exception: Class[_]) = {
-      val tryRange = Range(exceptionHandler.getStartPC, exceptionHandler.getEndPC)
-      tryRange.contains(instruction.getPosition) && {
-        val classContent = cpg.getConstantPool.getConstantString(exceptionHandler.getCatchType, Const.CONSTANT_Class)
-        val className = Utility.compactClassName(classContent, /* remove prefix = */false)
-        val handlerClass = Class.forName(className)
-        val isAssignable = handlerClass.isAssignableFrom(exception)
-        isAssignable
-      }
-    }
-
-    instruction.getInstruction match {
-      case thrower: ExceptionThrower =>
-        val exceptions = thrower.getExceptions
-        val exceptionHandlers = bcelMethod.getCode.getExceptionTable
-        val catchInstructions = exceptions.foldLeft(Set.empty[Instruction]) { (acc, exception) =>
-          val maybeHandler = exceptionHandlers.collectFirst {
-            case exceptionHandler if canCatch(exceptionHandler, exception) => getCatchInstruction(exceptionHandler)
-          }
-          if (maybeHandler.isDefined) acc + maybeHandler.get else acc
-        }
-        catchInstructions
-      case _ => Set()
-    }
-  }
-
   private def body(bcelInstructions: List[InstructionHandle]) =
-     for ( bcelInstruction <- bcelInstructions )
-       yield Instruction(bcelInstruction, cpg, this)
+    for (bcelInstruction <- bcelInstructions)
+      yield Instruction(bcelInstruction, cpg, this)
 
   private def decorate(body: List[Instruction]) =
     new EntryPoint(this) :: body ::: List(new ExitPoint(this))
@@ -80,13 +42,30 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, val cpg: ConstantPo
 
   def firstInstruction = instructions(1)
 
+  def isInsideTryBlock(instruction: Instruction) =
+    instruction.pc.exists(pc => catchBlockRanges.exists(_.contains(pc)))
+
+  private def catchBlockRanges: List[Range] =
+    for (catchBlock <- bcelMethod.getCode.getExceptionTable.toList)
+      yield Range(catchBlock.getStartPC, catchBlock.getEndPC)
+
+  def basicBlocks = {
+    val leaders = instructions.flatMap {
+      case ep: EntryPoint => Some(ep)
+      case i: ControlFlowInstruction => i.successors
+      case _ => None
+    }
+    for (leader <- leaders.distinct)
+      yield new BasicBlock(this, leader)
+  }
+
   def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Instruction =
     instructions.find(_ encapsulates bcelInstruction)
       .getOrElse(throw new RuntimeException("instruction not found"))
 
   def lookup(bcelInstruction: org.apache.bcel.generic.Instruction): Instruction =
     instructions.find(_ encapsulates bcelInstruction)
-    .getOrElse(throw new RuntimeException("instruction not found"))
+      .getOrElse(throw new RuntimeException("instruction not found"))
 
   def getLineNumber(bcelInstruction: org.apache.bcel.generic.Instruction): Int = {
     lookup(bcelInstruction).pc
@@ -94,22 +73,22 @@ class Method (bcelMethod : org.apache.bcel.classfile.Method, val cpg: ConstantPo
       .getOrElse(throw new RuntimeException("no PC for instruction found"))
   }
 
-  private def argReferences(index : Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
+  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
     if ( bcelArgs == Nil )
       Map()
     else
       bcelArgs.head match {
-      case basicType: org.apache.bcel.generic.BasicType =>
-        argReferences(index + basicType.getSize, bcelArgs.tail)
-      case referenceType: org.apache.bcel.generic.ReferenceType =>
-        argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, "bla"))
-    }
+        case basicType: org.apache.bcel.generic.BasicType =>
+          argReferences(index + basicType.getSize, bcelArgs.tail)
+        case referenceType: org.apache.bcel.generic.ReferenceType =>
+          argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, "bla"))
+      }
 
   val inputReferences: Map[Int, ObjectRef] =
     if ( bcelMethod.isStatic )
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(null/*TODO insert correct class type here*/, clazz.name))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(null /*TODO insert correct class type here*/ , clazz.name))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 

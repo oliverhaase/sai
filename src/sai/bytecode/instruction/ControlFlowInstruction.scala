@@ -11,16 +11,14 @@ class ControlFlowInstruction(bcelInstruction: org.apache.bcel.generic.Instructio
       List(lookupInstruction(i.getTarget))
     case i: org.apache.bcel.generic.IfInstruction => 
       List(lookupInstruction(i.getTarget), next)
-    case i: org.apache.bcel.generic.JsrInstruction => 
-      List(lookupInstruction(i.getTarget), next)
+    case _: org.apache.bcel.generic.JsrInstruction =>
+      throw new RuntimeException("jsr instruction is not supported")
     case i: org.apache.bcel.generic.Select => 
         val targetList = 
           for ( target <- i.getTargets.toList ) 
             yield lookupInstruction(target)
         next :: targetList
-    case _ => List(next)  
+    case _ => List(next)
   }
-  
- 
   
 }
