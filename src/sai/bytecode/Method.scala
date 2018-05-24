@@ -4,13 +4,9 @@ import scala.collection.mutable
 
 import bytecode.BasicBlock
 import cg.ConnectionGraph
-import org.apache.bcel.Const
-import org.apache.bcel.classfile.CodeException
-import org.apache.bcel.classfile.Utility
 import org.apache.bcel.generic.ConstantPoolGen
 import org.apache.bcel.generic.InstructionList
 import org.apache.bcel.generic.InstructionHandle
-import org.apache.bcel.generic.ExceptionThrower
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
@@ -19,6 +15,7 @@ import sai.vm.ObjectRef
 import vm.Frame
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
+
   val isAbstract = bcelMethod.isAbstract
   val isNative = bcelMethod.isNative
   val isDefined = !isAbstract && !isNative
@@ -42,20 +39,23 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   def firstInstruction = instructions(1)
 
-  def isInsideTryBlock(instruction: Instruction) =
-    instruction.pc.exists(pc => catchBlockRanges.exists(_.contains(pc)))
+  def lastInstruction = instructions(instructions.length - 2)
 
-  private def catchBlockRanges: List[Range] =
-    for (catchBlock <- bcelMethod.getCode.getExceptionTable.toList)
-      yield Range(catchBlock.getStartPC, catchBlock.getEndPC)
+  def isInsideTryBlock(instruction: Instruction) = {
+    val tryRanges =
+      for (exceptionHandler <- bcelMethod.getCode.getExceptionTable.toList)
+        yield Range(exceptionHandler.getStartPC, exceptionHandler.getEndPC)
+    instruction.pc.exists(pc => tryRanges.exists(_.contains(pc)))
+  }
 
   def basicBlocks = {
     val leaders = instructions.flatMap {
       case ep: EntryPoint => Some(ep)
       case i: ControlFlowInstruction => i.successors
       case _ => None
-    }
-    for (leader <- leaders.distinct)
+    }.distinct.sortBy(_.pc)
+
+    for (leader <- leaders)
       yield new BasicBlock(this, leader)
   }
 
@@ -63,14 +63,10 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     instructions.find(_ encapsulates bcelInstruction)
       .getOrElse(throw new RuntimeException("instruction not found"))
 
-  def lookup(bcelInstruction: org.apache.bcel.generic.Instruction): Instruction =
-    instructions.find(_ encapsulates bcelInstruction)
-      .getOrElse(throw new RuntimeException("instruction not found"))
-
-  def getLineNumber(bcelInstruction: org.apache.bcel.generic.Instruction): Int = {
+  def getLineNumber(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Int = {
     lookup(bcelInstruction).pc
       .map(bcelMethod.getLineNumberTable.getSourceLine)
-      .getOrElse(throw new RuntimeException("no PC for instruction found"))
+      .getOrElse(throw new RuntimeException(s"no PC for instruction ${bcelInstruction.toString(true)} found"))
   }
 
   private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
@@ -97,12 +93,12 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-    val worklist = buildWorklist()
+    val worklist = basicBlocks.toBuffer
     var frame = Frame(this)
 
     // store the out state for each instruction (initialized with an empty connection graph)
-    val outStates = mutable.Map.empty[Instruction, ConnectionGraph]
-    outStates ++= instructions.map(instruction => (instruction, ConnectionGraph.empty())).toMap
+    val outStates = mutable.Map.empty[BasicBlock, ConnectionGraph]
+    outStates ++= worklist.map(basicBlock => (basicBlock, ConnectionGraph.empty())).toMap
 
     // we use an upper bound in case the out states don't converge (i.e. we never reach a fixed point)
     val upperBound = 10 * worklist.size
@@ -114,7 +110,11 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       val head = worklist.remove(0)
       val before = outStates(head)
       val inStates = head.predecessors.map(predecessor => outStates(predecessor))
-      frame = head.transfer(frame, inStates)
+      match {
+        case Nil => ConnectionGraph.empty()
+        case nonEmptyList => nonEmptyList
+      }
+      //frame = head.transfer(frame, inStates)
       outStates(head) = frame.cg
 
       // out state changed => we have to recalculate the out states for each successor
@@ -125,17 +125,6 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       }
     }
     frame.cg
-  }
-
-  private def buildWorklist(): mutable.ListBuffer[Instruction] = {
-    val worklist = mutable.ListBuffer.empty[Instruction]
-    def visit(instruction: Instruction): Unit = {
-      worklist += instruction
-      val unvisited = instruction.successors.filterNot(worklist.contains)
-      unvisited.foreach(visit)
-    }
-    visit(entryPoint)
-    worklist
   }
 
   def interpret {

@@ -14,7 +14,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
       None
     else Some(bcelInstruction.getPosition)
 
-  def lineNumber = method.getLineNumber(bcelInstruction.getInstruction)
+  def lineNumber = method.getLineNumber(bcelInstruction)
 
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
@@ -25,7 +25,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
     this.bcelInstruction != null && bcelInstruction == this.bcelInstruction.getInstruction
 
-  def next: Instruction = 
+  def next: Instruction =
       if (bcelInstruction.getNext == null) 
          method.exitPoint
       else lookupInstruction(bcelInstruction.getNext)
@@ -65,7 +65,7 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
         Map("length" -> i.getLength)
       case _ => ""
     }
-    bcelInstruction.getInstruction.getName + " -> info: " + info.toString
+    s"${bcelInstruction.getInstruction.getName} | pc = $pc | info = $info"
   }
   
   def print {

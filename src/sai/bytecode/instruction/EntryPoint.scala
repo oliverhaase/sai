@@ -12,6 +12,8 @@ class EntryPoint(method: Method) extends Instruction(null, null, method) {
 
   override def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = frame
 
+  override def lineNumber: Int = method.firstInstruction.lineNumber - 1
+
   override def toString = "entry point"
 
 }

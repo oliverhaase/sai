@@ -13,5 +13,7 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
   override def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = frame
 
+  override def lineNumber: Int = method.lastInstruction.lineNumber
+
   override def toString = "exit point"
 }
