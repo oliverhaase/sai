@@ -89,10 +89,14 @@ public class BasicBlockExamples {
         System.out.println("exit");
     }
 
-
-    public static void main(String[] args) {
-        BasicBlockExamples x = new BasicBlockExamples();
-        x.tryFinally();
+    public void tryCatch() {
+        System.out.println("entry");
+        try {
+            System.out.println("try-block");
+        } catch(Exception e) {
+            System.out.println("catch-block");
+        }
+        System.out.println("exit");
     }
 
 }

@@ -43,15 +43,17 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   def isInsideTryBlock(instruction: Instruction) = {
     val tryRanges =
-      for (exceptionHandler <- bcelMethod.getCode.getExceptionTable.toList)
+      for (exceptionHandler <- exceptionHandlers)
         yield Range(exceptionHandler.getStartPC, exceptionHandler.getEndPC)
     instruction.pc.exists(pc => tryRanges.exists(_.contains(pc)))
   }
 
-  def basicBlocks = {
+  val basicBlocks: List[BasicBlock] = {
     val leaders = instructions.flatMap {
-      case ep: EntryPoint => Some(ep)
-      case i: ControlFlowInstruction => i.successors
+      case i: EntryPoint => Some(i)
+      case i if i.isFirstInstructionInsideTryBlock => Some(i)
+      case i if i.isFirstInstructionInsideCatchBlock => Some(i)
+      case i: ControlFlowInstruction => i.next :: i.successors
       case _ => None
     }.distinct.sortBy(_.pc)
 
@@ -89,6 +91,42 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
   def name: String = bcelMethod.getName
+
+  def getCatchInstructions(current: Instruction): List[Instruction] = {
+    if (current.pc.isEmpty) Nil
+    else {
+      val pc = current.pc.get
+      val handlerPcs = exceptionHandlers.filter { handler =>
+        handler.getStartPC <= pc && handler.getEndPC > pc
+      }.map(handler => handler.getHandlerPC)
+      instructions.filter(i => i.pc.isDefined && handlerPcs.contains(i.pc.get))
+    }
+  }
+
+  def exceptionHandlers = bcelMethod.getCode.getExceptionTable.toList
+
+  def isLastInstructionInsideTryBlock(instruction: Instruction): Boolean = {
+    instruction match {
+      case _: ExitPoint => false
+      case _ =>
+        if (instruction.next.pc.isEmpty) false
+        else exceptionHandlers.exists(_.getEndPC == instruction.next.pc.get)
+    }
+  }
+
+  def isFirstInstructionInsideCatchBlock(instruction: Instruction) = {
+    val firstCatchInstructions =
+      for (exceptionHandler <- exceptionHandlers)
+        yield exceptionHandler.getHandlerPC
+    instruction.pc.exists(firstCatchInstructions.contains)
+  }
+
+  def isFirstInstructionInsideTryBlock(instruction: Instruction) = {
+    val firstTryInstructions =
+      for (exceptionHandler <- exceptionHandlers)
+        yield exceptionHandler.getStartPC
+    instruction.pc.exists(firstTryInstructions.contains)
+  }
 
   override def toString: String = name
 

@@ -9,6 +9,11 @@ import vm.Frame
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
     val method: Method) {
 
+  def isLastInstructionInsideTryBlock = method.isLastInstructionInsideTryBlock(this)
+  def isFirstInstructionInsideTryBlock = method.isFirstInstructionInsideTryBlock(this)
+  def isFirstInstructionInsideCatchBlock = method.isFirstInstructionInsideCatchBlock(this)
+  def isInsideTryBlock = method.isInsideTryBlock(this)
+
   final def pc: Option[Int] =
     if (bcelInstruction == null)
       None
@@ -34,8 +39,6 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     case _: org.apache.bcel.generic.RETURN => List(method.exitPoint)
     case _ => List(next)
   }
-
-  private def isInsideTryBlock = method.isInsideTryBlock(this)
 
   final def predecessors: Set[Instruction] =
     for (candidate <- method.instructions.toSet if candidate.successors.contains(this))

@@ -8,7 +8,7 @@ class ControlFlowInstruction(bcelInstruction: org.apache.bcel.generic.Instructio
    
   override def successors: List[Instruction] = bcelInstruction.getInstruction match {
     case i: org.apache.bcel.generic.GotoInstruction => 
-      List(lookupInstruction(i.getTarget), next)
+      List(lookupInstruction(i.getTarget))
     case i: org.apache.bcel.generic.IfInstruction => 
       List(lookupInstruction(i.getTarget), next)
     case _: org.apache.bcel.generic.JsrInstruction =>
