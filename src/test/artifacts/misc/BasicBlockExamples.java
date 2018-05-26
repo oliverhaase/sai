@@ -99,4 +99,7 @@ public class BasicBlockExamples {
         System.out.println("exit");
     }
 
+    public void emptyMethod() {
+    }
+
 }

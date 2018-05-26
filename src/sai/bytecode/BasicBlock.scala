@@ -11,67 +11,66 @@ import vm.Frame
 
 class BasicBlock(method: Method, private val leader: Instruction) {
 
-  def lineRange = Range.inclusive(leader.lineNumber, lastInstruction.lineNumber)
+  def lineRange = leader.lineNumber to lastInstruction.lineNumber
 
-  override def toString: String = lineRange.toString()
+  override def toString: String = s"${method.name} ${lineRange.toString()}"
 
-  def predecessors =
+  def predecessors: List[BasicBlock] =
     for (basicBlock <- method.basicBlocks if basicBlock.successors.contains(this))
       yield basicBlock
 
-  def successors =
+  def successors: List[BasicBlock] =
     for (basicBlock <- method.basicBlocks if successorLeaders.contains(basicBlock.leader))
       yield basicBlock
-
-  private def instructions = {
-    val succLeaders = successorLeaders
-
-    @tailrec
-    def collectInstructions(current: Instruction, collection: List[Instruction]): List[Instruction] = {
-      current.successors match {
-        case next :: Nil if next.isLastInstructionInsideTryBlock =>
-          collection :+ current :+ next
-        case next :: Nil if !succLeaders.contains(next) =>
-          collectInstructions(next, collection :+ current)
-        case _ =>
-          collection :+ current
-      }
-    }
-    collectInstructions(leader, Nil)
-  }
-
-  private def successorLeaders = {
-    val leaders =
-      for (basicBlock <- method.basicBlocks)
-        yield basicBlock.leader
-
-    @tailrec
-    def findNextLeaders(instruction: Instruction): List[Instruction] = {
-      instruction match {
-        case _: ControlFlowInstruction =>
-          instruction.successors
-        case _ if leaders.contains(instruction) =>
-          List(instruction)
-        case _ if instruction.isFirstInstructionInsideTryBlock =>
-          List(instruction)
-        case _ if instruction.isLastInstructionInsideTryBlock =>
-          if (instruction.next.isInstanceOf[ControlFlowInstruction]) {
-            method.getCatchInstructions(instruction) ::: instruction.next.successors
-          } else method.getCatchInstructions(instruction)
-        case _: ExitPoint =>
-          Nil
-        case _ =>
-          findNextLeaders(instruction.next)
-      }
-    }
-    findNextLeaders(leader.next).distinct
-  }
-
-  private def lastInstruction = instructions.last
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
     frame
+  }
+
+  lazy val lastInstruction: Instruction = {
+    val leaders = method.basicBlocks.map(_.leader)
+    @tailrec
+    def findLast(instruction: Instruction): Instruction = instruction match {
+      case i: ExitPoint => i
+      case i: ControlFlowInstruction => i
+      case i if i.isLastTryInstruction => i
+      case i if leaders.contains(i.next) => i
+      case i => findLast(i.next)
+    }
+    findLast(leader.next)
+  }
+
+  private def instructions: List[Instruction] = {
+    val last = lastInstruction
+    @tailrec
+    def collectUntilLast(i: Instruction, instructions: List[Instruction]): List[Instruction] = {
+      if (i == last) instructions :+ i
+      else collectUntilLast(i.next, instructions :+ i)
+    }
+    collectUntilLast(leader, Nil)
+  }
+
+  private def successorLeaders: List[Instruction] = {
+    lastInstruction match {
+      case _: ExitPoint => Nil
+      case i: ControlFlowInstruction => i.successors
+      case i if i.isLastTryInstruction =>
+        // get all catch leaders (including the finally leader if there is one)
+        val catchLeaders = method.findCatchLeaders(i)
+        // check the successor of the last try instruction
+        i.next match {
+          case next: ControlFlowInstruction =>
+            // it is a branch instruction, so there is no finally block!
+            // -> add the targets of the branch instruction to the leader list
+            next.successors ::: catchLeaders
+          case _ =>
+            // it is not a branch instruction, so there is a finally block!
+            // -> the finally leader is already also in the catch leaders list
+            catchLeaders
+        }
+      case i => i.successors
+    }
   }
 
 }

@@ -9,17 +9,14 @@ import vm.Frame
 class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
     val method: Method) {
 
-  def isLastInstructionInsideTryBlock = method.isLastInstructionInsideTryBlock(this)
-  def isFirstInstructionInsideTryBlock = method.isFirstInstructionInsideTryBlock(this)
-  def isFirstInstructionInsideCatchBlock = method.isFirstInstructionInsideCatchBlock(this)
-  def isInsideTryBlock = method.isInsideTryBlock(this)
-
   final def pc: Option[Int] =
     if (bcelInstruction == null)
       None
     else Some(bcelInstruction.getPosition)
 
-  def lineNumber = method.getLineNumber(bcelInstruction)
+  def lineNumber = method.lineNumber(bcelInstruction)
+
+  def length = bcelInstruction.getInstruction.getLength
 
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
@@ -43,6 +40,14 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   final def predecessors: Set[Instruction] =
     for (candidate <- method.instructions.toSet if candidate.successors.contains(this))
       yield candidate
+
+  def isLastTryInstruction = method.isLastTryInstruction(this)
+
+  def isTryLeader = method.isTryLeader(this)
+
+  def isCatchLeader = method.isCatchLeader(this)
+
+  def isInsideTryBlock = method.isInsideTryBlock(this)
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)

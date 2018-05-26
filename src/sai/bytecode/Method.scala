@@ -48,12 +48,13 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     instruction.pc.exists(pc => tryRanges.exists(_.contains(pc)))
   }
 
-  val basicBlocks: List[BasicBlock] = {
+  lazy val basicBlocks: List[BasicBlock] = {
     val leaders = instructions.flatMap {
       case i: EntryPoint => Some(i)
-      case i if i.isFirstInstructionInsideTryBlock => Some(i)
-      case i if i.isFirstInstructionInsideCatchBlock => Some(i)
-      case i: ControlFlowInstruction => i.next :: i.successors
+      case i if i.isTryLeader => Some(i)
+      case i if i.isCatchLeader => Some(i)
+      case i: ControlFlowInstruction =>
+        i.next :: i.successors
       case _ => None
     }.distinct.sortBy(_.pc)
 
@@ -65,10 +66,9 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     instructions.find(_ encapsulates bcelInstruction)
       .getOrElse(throw new RuntimeException("instruction not found"))
 
-  def getLineNumber(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Int = {
-    lookup(bcelInstruction).pc
-      .map(bcelMethod.getLineNumberTable.getSourceLine)
-      .getOrElse(throw new RuntimeException(s"no PC for instruction ${bcelInstruction.toString(true)} found"))
+  def lineNumber(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Int = {
+    val pos = lookup(bcelInstruction).pc.get
+    bcelMethod.getLineNumberTable.getSourceLine(pos)
   }
 
   private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
@@ -92,40 +92,31 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   def name: String = bcelMethod.getName
 
-  def getCatchInstructions(current: Instruction): List[Instruction] = {
-    if (current.pc.isEmpty) Nil
-    else {
-      val pc = current.pc.get
-      val handlerPcs = exceptionHandlers.filter { handler =>
-        handler.getStartPC <= pc && handler.getEndPC > pc
-      }.map(handler => handler.getHandlerPC)
-      instructions.filter(i => i.pc.isDefined && handlerPcs.contains(i.pc.get))
-    }
-  }
+  private def exceptionHandlers = bcelMethod.getCode.getExceptionTable.toList
 
-  def exceptionHandlers = bcelMethod.getCode.getExceptionTable.toList
-
-  def isLastInstructionInsideTryBlock(instruction: Instruction): Boolean = {
-    instruction match {
-      case _: ExitPoint => false
-      case _ =>
-        if (instruction.next.pc.isEmpty) false
-        else exceptionHandlers.exists(_.getEndPC == instruction.next.pc.get)
-    }
-  }
-
-  def isFirstInstructionInsideCatchBlock(instruction: Instruction) = {
-    val firstCatchInstructions =
-      for (exceptionHandler <- exceptionHandlers)
-        yield exceptionHandler.getHandlerPC
-    instruction.pc.exists(firstCatchInstructions.contains)
-  }
-
-  def isFirstInstructionInsideTryBlock(instruction: Instruction) = {
-    val firstTryInstructions =
+  def isTryLeader(instruction: Instruction) = {
+    val startPCs =
       for (exceptionHandler <- exceptionHandlers)
         yield exceptionHandler.getStartPC
-    instruction.pc.exists(firstTryInstructions.contains)
+    instruction.pc.fold(false)(startPCs.contains)
+  }
+
+  def isLastTryInstruction(instruction: Instruction) =
+    instruction.pc.fold(false)(pc => exceptionHandlers.exists(_.getEndPC == pc + instruction.length))
+
+  def findCatchLeaders(instruction: Instruction): List[Instruction] =
+    instruction.pc.fold(List.empty[Instruction]){ pc =>
+      val handlerPositions =
+        for (handler <- exceptionHandlers if (handler.getStartPC until handler.getEndPC).contains(pc))
+          yield handler.getHandlerPC
+      instructions.filter(_.pc.fold(false)(handlerPositions.contains))
+    }
+
+  def isCatchLeader(instruction: Instruction) = {
+    val handlerPCs =
+      for (exceptionHandler <- exceptionHandlers)
+        yield exceptionHandler.getHandlerPC
+    instruction.pc.fold(false)(handlerPCs.contains)
   }
 
   override def toString: String = name
