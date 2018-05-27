@@ -10,7 +10,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   "A BasicBlock" should "have 1 block for a method without control flow" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("simple").get
-    val singleBlock :: Nil = method.basicBlocks
+    val singleBlock :: Nil = method.controlFlowGraph
 
     singleBlock.lineRange shouldBe (7 to 11)
     singleBlock.successors shouldBe empty
@@ -20,7 +20,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 3 blocks for a method with an if-statement" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("ifStatement").get
-    val entryBlock :: ifStatement :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: ifStatement :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (65 to 67)
     entryBlock.successors shouldEqual List(ifStatement, exitBlock)
@@ -38,7 +38,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 4 blocks for a method with an if-else-statement" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("ifElseStatement").get
-    val entryBlock :: ifBlock :: elseBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: ifBlock :: elseBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (73 to 75)
     entryBlock.successors shouldEqual List(ifBlock, elseBlock)
@@ -60,7 +60,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 4 blocks for a method with a while-loop" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("whileLoop").get
-    val entryBlock :: whileCondition :: whileBody :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: whileCondition :: whileBody :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (83 to 85)
     entryBlock.successors shouldEqual List(whileCondition)
@@ -82,7 +82,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 6 blocks for a method with an if-else-statement nested within a while loop" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("whileIfElse").get
-    val entryBlock :: whileCondition :: whileBegin :: ifBlock :: elseBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: whileCondition :: whileBegin :: ifBlock :: elseBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (13 to 16)
     entryBlock.successors shouldEqual List(whileCondition)
@@ -112,7 +112,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 4 blocks for a method with a try-finally construct" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("tryFinally").get
-    val entryBlock :: tryBlock :: finallyBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: tryBlock :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (29 to 30)
     entryBlock.successors shouldEqual List(tryBlock)
@@ -134,7 +134,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 5 blocks for a method with a try-catch-finally construct" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("tryCatchFinally").get
-    val entryBlock :: tryBlock :: catchBlock :: finallyBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: tryBlock :: catchBlock :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (39 to 40)
     entryBlock.successors shouldEqual List(tryBlock)
@@ -160,7 +160,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 6 blocks for a method with a try-catch-catch-finally construct" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("tryCatchCatchFinally").get
-    val entryBlock :: tryBlock :: catchBlock1 :: catchBlock2 :: finallyBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: tryBlock :: catchBlock1 :: catchBlock2 :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (51 to 52)
     entryBlock.successors shouldEqual List(tryBlock)
@@ -190,7 +190,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 4 blocks for a method with a try-catch construct" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("tryCatch").get
-    val entryBlock :: tryBlock :: catchBlock :: exitBlock :: Nil = method.basicBlocks
+    val entryBlock :: tryBlock :: catchBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.lineRange shouldBe (92 to 93)
     entryBlock.predecessors shouldBe empty
@@ -212,7 +212,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   it should "have 1 block for a method without any instructions" in {
     val clazz = new Clazz("misc.BasicBlockExamples")
     val method = clazz.method("emptyMethod").get
-    val singleBlock :: Nil = method.basicBlocks
+    val singleBlock :: Nil = method.controlFlowGraph
 
     singleBlock.lineRange shouldBe (102 to 103)
     singleBlock.predecessors shouldBe empty

@@ -3,6 +3,8 @@ package sai.bytecode
 import scala.collection.mutable
 
 import bytecode.BasicBlock
+import bytecode.ExceptionHandlerInfo
+import bytecode.BasicBlocks
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import org.apache.bcel.generic.InstructionList
@@ -10,7 +12,6 @@ import org.apache.bcel.generic.InstructionHandle
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
-import sai.bytecode.instruction.ControlFlowInstruction
 import sai.vm.ObjectRef
 import vm.Frame
 
@@ -41,29 +42,18 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   def lastInstruction = instructions(instructions.length - 2)
 
-  def isInsideTryBlock(instruction: Instruction) = {
-    val tryRanges =
-      for (exceptionHandler <- exceptionHandlers)
-        yield Range(exceptionHandler.getStartPC, exceptionHandler.getEndPC)
-    instruction.pc.exists(pc => tryRanges.exists(_.contains(pc)))
-  }
+  lazy val controlFlowGraph: List[BasicBlock] = BasicBlocks(this)
 
-  lazy val basicBlocks: List[BasicBlock] = {
-    val leaders = instructions.flatMap {
-      case i: EntryPoint => Some(i)
-      case i if i.isTryLeader => Some(i)
-      case i if i.isCatchLeader => Some(i)
-      case i: ControlFlowInstruction =>
-        i.next :: i.successors
-      case _ => None
-    }.distinct.sortBy(_.pc)
-
-    for (leader <- leaders)
-      yield new BasicBlock(this, leader)
-  }
+  def exceptionHandlerInfo = new ExceptionHandlerInfo(this, bcelMethod.getCode.getExceptionTable)
 
   def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Instruction =
-    instructions.find(_ encapsulates bcelInstruction)
+    lookup(_ encapsulates bcelInstruction)
+
+  def lookup(pc: Int): Instruction =
+    lookup(_.pc contains pc)
+
+  def lookup(predicate: Instruction => Boolean): Instruction =
+    instructions.find(predicate)
       .getOrElse(throw new RuntimeException("instruction not found"))
 
   def lineNumber(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Int = {
@@ -92,37 +82,10 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   def name: String = bcelMethod.getName
 
-  private def exceptionHandlers = bcelMethod.getCode.getExceptionTable.toList
-
-  def isTryLeader(instruction: Instruction) = {
-    val startPCs =
-      for (exceptionHandler <- exceptionHandlers)
-        yield exceptionHandler.getStartPC
-    instruction.pc.fold(false)(startPCs.contains)
-  }
-
-  def isLastTryInstruction(instruction: Instruction) =
-    instruction.pc.fold(false)(pc => exceptionHandlers.exists(_.getEndPC == pc + instruction.length))
-
-  def findCatchLeaders(instruction: Instruction): List[Instruction] =
-    instruction.pc.fold(List.empty[Instruction]){ pc =>
-      val handlerPositions =
-        for (handler <- exceptionHandlers if (handler.getStartPC until handler.getEndPC).contains(pc))
-          yield handler.getHandlerPC
-      instructions.filter(_.pc.fold(false)(handlerPositions.contains))
-    }
-
-  def isCatchLeader(instruction: Instruction) = {
-    val handlerPCs =
-      for (exceptionHandler <- exceptionHandlers)
-        yield exceptionHandler.getHandlerPC
-    instruction.pc.fold(false)(handlerPCs.contains)
-  }
-
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-    val worklist = basicBlocks.toBuffer
+    val worklist = controlFlowGraph.toBuffer
     var frame = Frame(this)
 
     // store the out state for each instruction (initialized with an empty connection graph)

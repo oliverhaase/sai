@@ -7,6 +7,7 @@ import sai.bytecode.Method
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.ExitPoint
 import sai.bytecode.instruction.ControlFlowInstruction
+import sai.bytecode.instruction.EntryPoint
 import vm.Frame
 
 class BasicBlock(method: Method, private val leader: Instruction) {
@@ -15,12 +16,12 @@ class BasicBlock(method: Method, private val leader: Instruction) {
 
   override def toString: String = s"${method.name} ${lineRange.toString()}"
 
-  def predecessors: List[BasicBlock] =
-    for (basicBlock <- method.basicBlocks if basicBlock.successors.contains(this))
+  def successors: List[BasicBlock] =
+    for (basicBlock <- method.controlFlowGraph if successorLeaders.contains(basicBlock.leader))
       yield basicBlock
 
-  def successors: List[BasicBlock] =
-    for (basicBlock <- method.basicBlocks if successorLeaders.contains(basicBlock.leader))
+  def predecessors: List[BasicBlock] =
+    for (basicBlock <- method.controlFlowGraph if basicBlock.successors.contains(this))
       yield basicBlock
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
@@ -28,8 +29,8 @@ class BasicBlock(method: Method, private val leader: Instruction) {
     frame
   }
 
-  lazy val lastInstruction: Instruction = {
-    val leaders = method.basicBlocks.map(_.leader)
+  private lazy val lastInstruction: Instruction = {
+    val leaders = method.controlFlowGraph.map(_.leader)
     @tailrec
     def findLast(instruction: Instruction): Instruction = instruction match {
       case i: ExitPoint => i
@@ -57,7 +58,7 @@ class BasicBlock(method: Method, private val leader: Instruction) {
       case i: ControlFlowInstruction => i.successors
       case i if i.isLastTryInstruction =>
         // get all catch leaders (including the finally leader if there is one)
-        val catchLeaders = method.findCatchLeaders(i)
+        val catchLeaders = method.exceptionHandlerInfo.findCatchLeaders(i)
         // check the successor of the last try instruction
         i.next match {
           case next: ControlFlowInstruction =>
@@ -71,6 +72,24 @@ class BasicBlock(method: Method, private val leader: Instruction) {
         }
       case i => i.successors
     }
+  }
+
+}
+
+object BasicBlocks {
+
+  def apply(method: Method): List[BasicBlock] = {
+    val leaders = method.instructions.flatMap {
+      case i: EntryPoint => Some(i)
+      case i if i.isTryLeader => Some(i)
+      case i if i.isCatchLeader => Some(i)
+      case i: ControlFlowInstruction =>
+        i.next :: i.successors
+      case _ => None
+    }.distinct.sortBy(_.pc)
+
+    for (leader <- leaders)
+      yield new BasicBlock(method, leader)
   }
 
 }

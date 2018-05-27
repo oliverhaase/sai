@@ -41,13 +41,13 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     for (candidate <- method.instructions.toSet if candidate.successors.contains(this))
       yield candidate
 
-  def isLastTryInstruction = method.isLastTryInstruction(this)
+  def isLastTryInstruction = method.exceptionHandlerInfo.isLastTryInstruction(this)
 
-  def isTryLeader = method.isTryLeader(this)
+  def isTryLeader = method.exceptionHandlerInfo.isTryLeader(this)
 
-  def isCatchLeader = method.isCatchLeader(this)
+  def isCatchLeader = method.exceptionHandlerInfo.isCatchLeader(this)
 
-  def isInsideTryBlock = method.isInsideTryBlock(this)
+  def isInsideTryBlock = method.exceptionHandlerInfo.isInsideTryBlock(this)
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
