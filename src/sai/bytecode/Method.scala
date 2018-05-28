@@ -5,6 +5,7 @@ import scala.collection.mutable
 import bytecode.BasicBlock
 import bytecode.ExceptionHandlerInfo
 import bytecode.BasicBlocks
+import bytecode.instruction.ReturnInstruction
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import org.apache.bcel.generic.InstructionList
@@ -60,6 +61,9 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     val pos = lookup(bcelInstruction).pc.get
     bcelMethod.getLineNumberTable.getSourceLine(pos)
   }
+
+  def numberOfReturnStatements =
+    instructions.count(_.isInstanceOf[ReturnInstruction])
 
   private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
     if ( bcelArgs == Nil )

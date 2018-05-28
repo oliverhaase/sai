@@ -31,11 +31,14 @@ class BasicBlock(method: Method, val leader: Instruction) {
   }
 
   private lazy val lastInstruction: Instruction = {
-    val leaders = method.controlFlowGraph.map(_.leader)
+    val leaders =
+      for (basicBlock <- method.controlFlowGraph)
+        yield basicBlock.leader
+
     @tailrec
     def findLast(instruction: Instruction): Instruction = instruction match {
       case ep: ExitPoint => ep
-      case i if (i.next :: i.successors).exists(leaders.contains) => i
+      case i if i.successors.exists(leaders.contains) => i
       case i => findLast(i.next)
     }
     findLast(leader)
@@ -64,7 +67,11 @@ object BasicBlocks {
       case _ => None
     }.distinct.sortBy(_.pc)
 
-    leaders = leaders :+ method.exitPoint
+    if (method.numberOfReturnStatements >= 2) {
+      // the exit point only becomes a leader if it has multiple predecessors
+      // -> i.e. there are at least 2 return statements within the method.
+      leaders = leaders :+ method.exitPoint
+    }
 
     for (leader <- leaders)
       yield new BasicBlock(method, leader)

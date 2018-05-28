@@ -102,4 +102,14 @@ public class BasicBlockExamples {
     public void emptyMethod() {
     }
 
+    public Object multipleReturns() {
+        System.out.println("entry");
+        if (new Random().nextBoolean()) {
+            System.out.println("in if-block");
+            return new Object();
+        }
+        System.out.println("after if-block");
+        return new Object();
+    }
+
 }
