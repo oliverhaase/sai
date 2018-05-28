@@ -12,12 +12,13 @@ class ExceptionInfo(method: Method, codeExceptions: Array[CodeException]) {
       yield new ExceptionHandler(method, codeException)
 
   /**
-   * The java compiler copies all finally statements to the end of the try block
+   * The java compiler copies all instructions in the finally block to the end of the try block
    * and to the end of each catch block (since 'jsr' instruction is deprecated).
    *
-   * The original statements of the finally block however are still compiled to the bytecode.
-   * These instructions are inserted after the try block or after the last catch block.
-   * The finally-block ends with an 'athrow' instruction which can never be thrown
+   * The statements of the 'original' finally block however are still compiled and
+   * inserted after the try block (try/finally) or after the last catch block (try/catch1/catch2/.../finally).
+   *
+   * This finally-block ends with an 'athrow' instruction which can never be thrown
    * since the code in this block will never be executed.
    *
    * @param throwInstruction instruction to check
