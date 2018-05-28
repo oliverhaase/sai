@@ -2,6 +2,7 @@ package bytecode
 
 import scala.annotation.tailrec
 
+import bytecode.instruction.ReturnInstruction
 import cg.ConnectionGraph
 import sai.bytecode.Method
 import sai.bytecode.instruction.Instruction
@@ -10,7 +11,7 @@ import sai.bytecode.instruction.ControlFlowInstruction
 import sai.bytecode.instruction.EntryPoint
 import vm.Frame
 
-class BasicBlock(method: Method, private val leader: Instruction) {
+class BasicBlock(method: Method, val leader: Instruction) {
 
   def lineRange = leader.lineNumber to lastInstruction.lineNumber
 
@@ -33,13 +34,11 @@ class BasicBlock(method: Method, private val leader: Instruction) {
     val leaders = method.controlFlowGraph.map(_.leader)
     @tailrec
     def findLast(instruction: Instruction): Instruction = instruction match {
-      case i: ExitPoint => i
-      case i: ControlFlowInstruction => i
-      case i if i.isLastTryInstruction => i
-      case i if leaders.contains(i.next) => i
+      case ep: ExitPoint => ep
+      case i if (i.next :: i.successors).exists(leaders.contains) => i
       case i => findLast(i.next)
     }
-    findLast(leader.next)
+    findLast(leader)
   }
 
   private def instructions: List[Instruction] = {
@@ -52,41 +51,20 @@ class BasicBlock(method: Method, private val leader: Instruction) {
     collectUntilLast(leader, Nil)
   }
 
-  private def successorLeaders: List[Instruction] = {
-    lastInstruction match {
-      case _: ExitPoint => Nil
-      case i: ControlFlowInstruction => i.successors
-      case i if i.isLastTryInstruction =>
-        // get all catch leaders (including the finally leader if there is one)
-        val catchLeaders = method.exceptionHandlerInfo.findCatchLeaders(i)
-        // check the successor of the last try instruction
-        i.next match {
-          case next: ControlFlowInstruction =>
-            // it is a branch instruction, so there is no finally block!
-            // -> add the targets of the branch instruction to the leader list
-            next.successors ::: catchLeaders
-          case _ =>
-            // it is not a branch instruction, so there is a finally block!
-            // -> the finally leader is already also in the catch leaders list
-            catchLeaders
-        }
-      case i => i.successors
-    }
-  }
+  private def successorLeaders: List[Instruction] = lastInstruction.successors
 
 }
 
 object BasicBlocks {
 
   def apply(method: Method): List[BasicBlock] = {
-    val leaders = method.instructions.flatMap {
+    var leaders = method.instructions.flatMap {
       case i: EntryPoint => Some(i)
-      case i if i.isTryLeader => Some(i)
-      case i if i.isCatchLeader => Some(i)
-      case i: ControlFlowInstruction =>
-        i.next :: i.successors
+      case i: ControlFlowInstruction => i.next :: i.successors
       case _ => None
     }.distinct.sortBy(_.pc)
+
+    leaders = leaders :+ method.exitPoint
 
     for (leader <- leaders)
       yield new BasicBlock(method, leader)

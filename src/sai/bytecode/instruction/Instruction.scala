@@ -1,6 +1,7 @@
 package sai.bytecode.instruction
 
-import bytecode.instruction.InstructionHandler
+import bytecode.instruction.InstructionInterpreter
+import bytecode.instruction.ReturnInstruction
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
@@ -27,13 +28,23 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
     this.bcelInstruction != null && bcelInstruction == this.bcelInstruction.getInstruction
 
-  def next: Instruction =
-      if (bcelInstruction.getNext == null) 
-         method.exitPoint
-      else lookupInstruction(bcelInstruction.getNext)
-  
+  def next: Instruction = lookupInstruction(bcelInstruction.getNext)
+
   def successors: List[Instruction] = bcelInstruction.getInstruction match {
-    case _: org.apache.bcel.generic.RETURN => List(method.exitPoint)
+    case _ if isLastTryInstruction =>
+      // get all catch leaders (including the finally leader if there is one)
+      val catchLeaders = method.exceptionHandlerInfo.findCatchLeaders(this)
+      // check the successor of the last try instruction
+      next match {
+        case x: ControlFlowInstruction =>
+          // it is a branch instruction, so there is no finally block!
+          // -> add the targets of the branch instruction to the leader list
+          x.successors ::: catchLeaders
+        case _ =>
+          // it is not a branch instruction, so there is a finally block!
+          // -> the finally leader is already also in the catch leaders list
+          catchLeaders
+      }
     case _ => List(next)
   }
 
@@ -43,15 +54,13 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
 
   def isLastTryInstruction = method.exceptionHandlerInfo.isLastTryInstruction(this)
 
-  def isTryLeader = method.exceptionHandlerInfo.isTryLeader(this)
-
   def isCatchLeader = method.exceptionHandlerInfo.isCatchLeader(this)
 
   def isInsideTryBlock = method.exceptionHandlerInfo.isInsideTryBlock(this)
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
-    val outState = InstructionHandler.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
+    val outState = InstructionInterpreter.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
     outState
   }
 
@@ -86,6 +95,7 @@ object Instruction {
   def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) = 
     bcelInstruction.getInstruction match {
       case bi: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
+      case ri: org.apache.bcel.generic.ReturnInstruction => new ReturnInstruction(bcelInstruction, cpg, method)
       case _ => new Instruction(bcelInstruction, cpg, method)
     }
 }
