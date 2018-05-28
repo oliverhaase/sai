@@ -2,7 +2,6 @@ package bytecode
 
 import scala.annotation.tailrec
 
-import bytecode.instruction.ReturnInstruction
 import cg.ConnectionGraph
 import sai.bytecode.Method
 import sai.bytecode.instruction.Instruction
@@ -67,9 +66,10 @@ object BasicBlocks {
       case _ => None
     }.distinct.sortBy(_.pc)
 
-    if (method.numberOfReturnStatements >= 2) {
-      // the exit point only becomes a leader if it has multiple predecessors
-      // -> i.e. there are at least 2 return statements within the method.
+    if (method.exitPoint.predecessors.size > 1) {
+      // We only make the exit point a leader if it has multiple predecessors.
+      // It is important that the exit point is added to the end of the list
+      // because of the order in which the leaders are sorted.
       leaders = leaders :+ method.exitPoint
     }
 

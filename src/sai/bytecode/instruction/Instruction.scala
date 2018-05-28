@@ -1,7 +1,6 @@
 package sai.bytecode.instruction
 
 import bytecode.instruction.InstructionInterpreter
-import bytecode.instruction.ReturnInstruction
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
@@ -28,35 +27,37 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
     this.bcelInstruction != null && bcelInstruction == this.bcelInstruction.getInstruction
 
-  def next: Instruction = lookupInstruction(bcelInstruction.getNext)
+  def next: Instruction =
+    if (bcelInstruction.getNext == null)
+      method.exitPoint
+    else lookupInstruction(bcelInstruction.getNext)
 
-  def successors: List[Instruction] = bcelInstruction.getInstruction match {
-    case _ if isLastTryInstruction =>
-      // get all catch leaders (including the finally leader if there is one)
-      val catchLeaders = method.exceptionHandlerInfo.findCatchLeaders(this)
-      // check the successor of the last try instruction
-      next match {
-        case x: ControlFlowInstruction =>
-          // it is a branch instruction, so there is no finally block!
-          // -> add the targets of the branch instruction to the leader list
-          x.successors ::: catchLeaders
-        case _ =>
-          // it is not a branch instruction, so there is a finally block!
-          // -> the finally leader is already also in the catch leaders list
-          catchLeaders
-      }
-    case _ => List(next)
+  def prev: Instruction =
+    if (bcelInstruction.getPrev == null)
+      method.entryPoint
+    else lookupInstruction(bcelInstruction.getPrev)
+
+  def successors: List[Instruction] = {
+    val succs = bcelInstruction.getInstruction match {
+      case _: org.apache.bcel.generic.ATHROW if !method.exceptionInfo.isThrowInFinallyBlock(this) =>
+        List(method.exitPoint)
+      case _: org.apache.bcel.generic.ReturnInstruction =>
+        List(method.exitPoint)
+      case _ => List(next)
+    }
+
+    if (method.exceptionInfo.isLastTryInstruction(this)) {
+      succs ::: method.exceptionInfo.findCatchLeaders(this)
+    } else {
+      succs
+    }
   }
 
   final def predecessors: Set[Instruction] =
     for (candidate <- method.instructions.toSet if candidate.successors.contains(this))
       yield candidate
 
-  def isLastTryInstruction = method.exceptionHandlerInfo.isLastTryInstruction(this)
-
-  def isCatchLeader = method.exceptionHandlerInfo.isCatchLeader(this)
-
-  def isInsideTryBlock = method.exceptionHandlerInfo.isInsideTryBlock(this)
+  def isInsideTryBlock = method.exceptionInfo.isInsideTryBlock(this)
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
@@ -95,7 +96,6 @@ object Instruction {
   def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) = 
     bcelInstruction.getInstruction match {
       case bi: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
-      case ri: org.apache.bcel.generic.ReturnInstruction => new ReturnInstruction(bcelInstruction, cpg, method)
       case _ => new Instruction(bcelInstruction, cpg, method)
     }
 }
