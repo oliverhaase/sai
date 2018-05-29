@@ -62,7 +62,7 @@ class ExceptionInfo(method: Method, codeExceptions: Array[CodeException]) {
 
     // check the successor of the last try instruction
     instruction.next match {
-      case x: ControlFlowInstruction =>
+      case x: ControlFlowInstruction if x.isGoto =>
         // it is a branch instruction, so there is no finally block!
         // -> add the targets of the branch instruction to the leader list
         x.successors ::: catchLeaders
