@@ -6,8 +6,8 @@ import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import vm.Frame
 
-class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
-    val method: Method) {
+class Instruction(protected val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
+    val method: Method) extends Ordered[Instruction] {
 
   final def pc: Option[Int] =
     if (bcelInstruction == null)
@@ -38,23 +38,17 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     else lookupInstruction(bcelInstruction.getPrev)
 
   def successors: List[Instruction] = {
-    val succs = bcelInstruction.getInstruction match {
+    bcelInstruction.getInstruction match {
       case _: org.apache.bcel.generic.ATHROW if !method.exceptionInfo.isThrowInFinallyBlock(this) =>
         List(method.exitPoint)
       case _: org.apache.bcel.generic.ReturnInstruction =>
         List(method.exitPoint)
       case _ => List(next)
     }
-
-    if (method.exceptionInfo.isLastTryInstruction(this)) {
-      succs ::: method.exceptionInfo.findCatchLeaders(this)
-    } else {
-      succs
-    }
   }
 
-  final def predecessors: Set[Instruction] =
-    for (candidate <- method.instructions.toSet if candidate.successors.contains(this))
+  final def predecessors: List[Instruction] =
+    for (candidate <- method.instructions if candidate.successors.contains(this))
       yield candidate
 
   def isInsideTryBlock = method.exceptionInfo.isInsideTryBlock(this)
@@ -90,13 +84,27 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
     val pos = if (bcelInstruction == null) " " else bcelInstruction.getPosition
     println(pos + ": " + toString)
   }
+
+  override def compare(that: Instruction): Int = Ordering[Option[Int]].compare(pc, that.pc)
 }
 
 object Instruction {
+
+  private[this] trait FindCatchLeaders extends Instruction {
+    override def successors: List[Instruction] = {
+      val catchLeaders =
+        if (method.exceptionInfo.isLastTryInstruction(this))
+          method.exceptionInfo.findCatchLeaders(this)
+        else
+          Nil
+      super.successors ::: catchLeaders
+    }
+  }
+
   def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) = 
     bcelInstruction.getInstruction match {
-      case bi: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
-      case _ => new Instruction(bcelInstruction, cpg, method)
+      case _: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
+      case _ => new Instruction(bcelInstruction, cpg, method) with FindCatchLeaders
     }
 }
 

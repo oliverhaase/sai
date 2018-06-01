@@ -17,5 +17,7 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
   override def lineNumber: Int = method.lastInstruction.lineNumber
 
+  override def compare(that: Instruction): Int = 1
+
   override def toString = "exit point"
 }
