@@ -10,11 +10,11 @@ import sai.bytecode.instruction.ControlFlowInstruction
 import sai.bytecode.instruction.EntryPoint
 import vm.Frame
 
-class BasicBlock(method: Method, val leader: Instruction) {
+class BasicBlock(val method: Method, val leader: Instruction) {
 
   def lineRange = leader.lineNumber to lastInstruction.lineNumber
 
-  override def toString: String = s"${method.name} ${lineRange.toString()}"
+  override def toString: String = StringContext("", " ", "").s(method.name, lineRange.toString())
 
   def successors: List[BasicBlock] =
     for (basicBlock <- method.controlFlowGraph if successorLeaders.contains(basicBlock.leader))
@@ -57,24 +57,6 @@ class BasicBlock(method: Method, val leader: Instruction) {
 
 }
 
-object BasicBlocks {
-
-  def apply(method: Method): List[BasicBlock] = {
-    var leaders = method.instructions.flatMap {
-      case i: EntryPoint => Some(i)
-      case i: ControlFlowInstruction => i.next :: i.successors
-      case _ => None
-    }.distinct.sortBy(_.pc)
-
-    if (method.exitPoint.predecessors.size > 1) {
-      // We only make the exit point a leader if it has multiple predecessors.
-      // It is important that the exit point is added to the end of the list
-      // because of the order in which the leaders are sorted.
-      leaders = leaders :+ method.exitPoint
-    }
-
-    for (leader <- leaders)
-      yield new BasicBlock(method, leader)
-  }
-
+object BasicBlock {
+  def unapply(arg: BasicBlock): Option[(Method, Instruction)] = Some(arg.method, arg.leader)
 }

@@ -106,67 +106,51 @@ class BasicBlockTest extends FlatSpec with Matchers {
     exitBlock.successors shouldBe empty
   }
 
-  it should "have 3 basic blocks for a method with a try-finally construct" in {
+  it should "have 1 basic block for a method with a try-finally construct" in {
     val method = clazz.method("tryFinally").get
-    val entryTryBlock :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
+    val block :: Nil = method.controlFlowGraph
 
-    entryTryBlock.predecessors shouldBe empty
-    entryTryBlock.lineRange shouldBe (29 to 32)
-    entryTryBlock.successors shouldEqual List(finallyBlock)
-
-    finallyBlock.predecessors shouldEqual List(entryTryBlock)
-    finallyBlock.lineRange shouldBe (34 to 35)
-    finallyBlock.successors shouldEqual List(exitBlock)
-
-    exitBlock.predecessors shouldEqual List(finallyBlock)
-    exitBlock.lineRange shouldBe (36 to 37)
-    exitBlock.successors shouldBe empty
+    block.predecessors shouldBe empty
+    block.lineRange shouldBe (29 to 37)
+    block.successors shouldBe empty
   }
 
-  it should "have 4 basic blocks for a method with a try-catch-finally construct" in {
+  it should "have 3 basic blocks for a method with a try-catch-finally construct" in {
     val method = clazz.method("tryCatchFinally").get
-    val entryTryBlock :: catchBlock :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
+    val entryTryBlock :: catchBlock :: finallyExitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
     entryTryBlock.lineRange shouldBe (39 to 42)
-    entryTryBlock.successors shouldEqual List(catchBlock, finallyBlock)
+    entryTryBlock.successors shouldEqual List(catchBlock, finallyExitBlock)
 
     catchBlock.predecessors shouldEqual List(entryTryBlock)
     catchBlock.lineRange shouldBe (43 to 44)
-    catchBlock.successors shouldEqual List(finallyBlock)
+    catchBlock.successors shouldEqual List(finallyExitBlock)
 
-    finallyBlock.predecessors shouldEqual List(entryTryBlock, catchBlock)
-    finallyBlock.lineRange shouldBe (46 to 47)
-    finallyBlock.successors shouldEqual List(exitBlock)
-
-    exitBlock.predecessors shouldEqual List(finallyBlock)
-    exitBlock.lineRange shouldBe (48 to 49)
-    exitBlock.successors shouldBe empty
+    finallyExitBlock.predecessors shouldEqual List(entryTryBlock, catchBlock)
+    finallyExitBlock.lineRange shouldBe (46 to 49)
+    finallyExitBlock.successors shouldBe empty
   }
 
-  it should "have 5 basic blocks for a method with a try-catch-catch-finally construct" in {
+  it should "have 4 basic blocks for a method with a try-catch-catch-finally construct" in {
     val method = clazz.method("tryCatchCatchFinally").get
-    val entryTryBlock :: catchBlock1 :: catchBlock2 :: finallyBlock :: exitBlock :: Nil = method.controlFlowGraph
+    val entryTryBlock :: catchBlock1 :: catchBlock2 :: finallyExitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
     entryTryBlock.lineRange shouldBe (51 to 54)
-    entryTryBlock.successors shouldEqual List(catchBlock1, catchBlock2, finallyBlock)
+    entryTryBlock.successors shouldEqual List(catchBlock1, catchBlock2, finallyExitBlock)
 
     catchBlock1.predecessors shouldEqual List(entryTryBlock)
     catchBlock1.lineRange shouldBe (55 to 56)
-    catchBlock1.successors shouldEqual List(finallyBlock)
+    catchBlock1.successors shouldEqual List(finallyExitBlock)
 
     catchBlock2.predecessors shouldEqual List(entryTryBlock)
     catchBlock2.lineRange shouldBe (57 to 58)
-    catchBlock2.successors shouldEqual List(finallyBlock)
+    catchBlock2.successors shouldEqual List(finallyExitBlock)
 
-    finallyBlock.predecessors shouldEqual List(entryTryBlock, catchBlock1, catchBlock2)
-    finallyBlock.lineRange shouldBe (60 to 61)
-    finallyBlock.successors shouldEqual List(exitBlock)
-
-    exitBlock.predecessors shouldEqual List(finallyBlock)
-    exitBlock.lineRange shouldBe (62 to 63)
-    exitBlock.successors shouldBe empty
+    finallyExitBlock.predecessors shouldEqual List(entryTryBlock, catchBlock1, catchBlock2)
+    finallyExitBlock.lineRange shouldBe (60 to 63)
+    finallyExitBlock.successors shouldBe empty
   }
 
   it should "have 3 basic blocks for a method with a try-catch construct" in {

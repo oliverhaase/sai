@@ -112,4 +112,44 @@ public class BasicBlockExamples {
         return new Object();
     }
 
+    public void ifInFinally() {
+        int x = 0;
+        try {
+            System.out.println("in-try");
+            x = new Random().nextInt();
+        } finally {
+            if (true) {
+                System.out.println("passed try block successfully");
+            }
+        }
+        System.out.println(x);
+    }
+
+    public void throwsEveryTime() {
+        System.out.println("entry");
+        throw new RuntimeException();
+    }
+
+    public void maybeThrows() {
+        if (new Random().nextBoolean()) {
+            throw new RuntimeException();
+        }
+    }
+
+    public void throwInCatch() {
+        try {
+            System.out.println("try");
+        } catch (Throwable e) {
+            throw new RuntimeException();
+        }
+    }
+
+    public void doWhile() {
+        System.out.println("entry");
+        do {
+            System.out.println("body");
+        } while (new Random().nextBoolean());
+        System.out.println("exit");
+    }
+
 }
