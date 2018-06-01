@@ -53,9 +53,10 @@ class ExceptionInfo(method: Method, codeExceptions: Array[CodeException]) {
   def isInsideTryBlock(instruction: Instruction) =
     exceptionHandlers.exists(_.handles(instruction))
 
-  def findCatchLeaders(instruction: Instruction) = {
-    assert(isLastTryInstruction(instruction))
+  def isFinallyLeader(instruction: Instruction) =
+    exceptionHandlers.exists(handler => handler.catchesAnyException && handler.firstCatchInstruction == instruction)
 
+  def findCatchLeaders(instruction: Instruction) = {
     val catchLeaders =
       for (exceptionHandler <- exceptionHandlers if exceptionHandler.handles(instruction))
         yield exceptionHandler.firstCatchInstruction
@@ -77,7 +78,7 @@ class ExceptionInfo(method: Method, codeExceptions: Array[CodeException]) {
 
 private class ExceptionHandler(method: Method, exception: CodeException) {
 
-  def catchesAnyException: Boolean = exception.getCatchType == 0
+  def catchesAnyException = exception.getCatchType == 0
 
   def target = exception.getHandlerPC
 
