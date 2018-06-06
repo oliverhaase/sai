@@ -239,4 +239,30 @@ class BasicBlockTest extends FlatSpec with Matchers {
     exitBlock.lineRange shouldBe (161 to 162)
     exitBlock.successors shouldBe empty
   }
+
+  it should "have 5 basic blocks for a method with a switch-case-case-default statement" in {
+    val method = clazz.method("switchCaseCaseDefault").get
+    val entryBlock :: case1Block :: case2Block :: defaultBlock :: exitBlock :: Nil = method.controlFlowGraph
+
+    entryBlock.predecessors shouldBe empty
+    entryBlock.lineRange shouldBe (164 to 167)
+    entryBlock.successors shouldEqual List(case1Block, case2Block, defaultBlock)
+
+    case1Block.predecessors shouldEqual List(entryBlock)
+    case1Block.lineRange shouldBe (169 to 170)
+    case1Block.successors shouldEqual List(exitBlock)
+
+    case2Block.predecessors shouldEqual List(entryBlock)
+    case2Block.lineRange shouldBe (172 to 173)
+    case2Block.successors shouldEqual List(exitBlock)
+
+    defaultBlock.predecessors shouldEqual List(entryBlock)
+    defaultBlock.lineRange shouldBe (175 to 175)
+    defaultBlock.successors shouldEqual List(exitBlock)
+
+    exitBlock.predecessors shouldEqual List(case1Block, case2Block, defaultBlock)
+    exitBlock.lineRange shouldBe (178 to 179)
+    exitBlock.successors shouldBe empty
+  }
+
 }

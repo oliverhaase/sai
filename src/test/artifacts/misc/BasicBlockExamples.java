@@ -161,4 +161,21 @@ public class BasicBlockExamples {
         System.out.println("exit");
     }
 
+    public void switchCaseCaseDefault() {
+        int x = 0;
+        int rand = new Random().nextInt();
+        switch (rand) {
+            case 1:
+                x = 1;
+                break;
+            case 2:
+                x = 4;
+                break;
+            default:
+                x = 99;
+                break;
+        }
+        System.out.println(x);
+    }
+
 }

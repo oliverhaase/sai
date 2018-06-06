@@ -17,7 +17,8 @@ class ControlFlowInstruction(bcelInstruction: org.apache.bcel.generic.Instructio
         val targetList = 
           for ( target <- i.getTargets.toList ) 
             yield lookupInstruction(target)
-        next :: targetList
+      val defaultTarget = lookupInstruction(i.getTarget)
+      targetList :+ defaultTarget
     case _ => List(next)
   }
 
