@@ -218,4 +218,25 @@ class BasicBlockTest extends FlatSpec with Matchers {
     exitBlock.successors shouldBe empty
   }
 
+  it should "have 4 basic blocks for a method with a foor loop" in {
+    val method = clazz.method("foorLoop").get
+    val q = method.controlFlowGraph
+    val entryBlock :: loopCondition :: loopBody :: exitBlock :: Nil = method.controlFlowGraph
+
+    entryBlock.predecessors shouldBe empty
+    entryBlock.lineRange shouldBe (156 to 158)
+    entryBlock.successors shouldEqual List(loopCondition)
+
+    loopCondition.predecessors shouldEqual List(entryBlock, loopBody)
+    loopCondition.lineRange shouldBe (158 to 158)
+    loopCondition.successors shouldEqual List(loopBody, exitBlock)
+
+    loopBody.predecessors shouldBe List(loopCondition)
+    loopBody.lineRange shouldBe (159 to 158)
+    loopBody.successors shouldEqual List(loopCondition)
+
+    exitBlock.predecessors shouldEqual List(loopCondition)
+    exitBlock.lineRange shouldBe (161 to 162)
+    exitBlock.successors shouldBe empty
+  }
 }

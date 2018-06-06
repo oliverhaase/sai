@@ -153,4 +153,12 @@ public class BasicBlockExamples {
         System.out.println("exit");
     }
 
+    public void foorLoop() {
+        System.out.println("entry");
+        for (int i = 0; i < 10; i++) {
+            System.out.println(i);
+        }
+        System.out.println("exit");
+    }
+
 }
