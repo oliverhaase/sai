@@ -1,97 +1,97 @@
 package bytecode
 
+import scala.annotation.tailrec
+
 import org.apache.bcel.classfile.CodeException
 import sai.bytecode.Method
 import sai.bytecode.instruction.Instruction
 import sai.bytecode.instruction.ControlFlowInstruction
 
-class ExceptionInfo(method: Method, codeExceptions: Array[CodeException]) {
+object ExceptionInfo {
 
-  private def exceptionHandlers =
-    for (codeException <- codeExceptions.toList)
-      yield new ExceptionHandler(method, codeException)
-
-  /**
-   * The java compiler copies all instructions in the finally block to the end of the try block
-   * and to the end of each catch block (since 'jsr' instruction is deprecated).
-   *
-   * The statements of the 'original' finally block however are still compiled and
-   * inserted after the try block (try/finally) or after the last catch block (try/catch1/catch2/.../finally).
-   *
-   * This finally-block ends with an 'athrow' instruction which can never be thrown
-   * since the code in this block will never be executed.
-   *
-   * @param throwInstruction instruction to check
-   * @return true if the given throw instruction is the last statement in a finally block, false otherwise.
-   */
-  def isThrowInFinallyBlock(throwInstruction: Instruction) = {
-    val handlers =
-      for (exceptionHandler <- exceptionHandlers if exceptionHandler.catchesAnyException)
-        yield exceptionHandler
-    handlers.exists { handler =>
-      val targetInstruction = method.lookup(handler.target)
-      val prev = targetInstruction.prev
-      prev match {
-        case i: ControlFlowInstruction if i.isGoto =>
-          val gotoTarget = i.successors.head
-          gotoTarget.prev == throwInstruction
-        case _ =>
-            false
-      }
-    }
+  def apply(method: Method, codeExceptions: List[CodeException]): ExceptionInfo = {
+    val exceptionBlocks = findExceptionBlocks(method, codeExceptions, Nil)
+    new ExceptionInfo(exceptionBlocks)
   }
 
-  def isTryLeader(instruction: Instruction) =
-    exceptionHandlers.exists(_.firstTryInstruction == instruction)
+  @tailrec
+  private[this] def findExceptionBlocks(m: Method, exceptions: List[CodeException], exceptionBlocks: List[ExceptionBlock]): List[ExceptionBlock] = exceptions match {
+    case Nil =>
+      exceptionBlocks
+    case exception :: _ =>
+      val tryRange = exception.getStartPC to exception.getEndPC
+      val catchBlocks = exceptions.filter(e => e.getCatchType != 0 && e.getStartPC == tryRange.start)
+      val finallyBlock = exceptions.find(e => e.getCatchType == 0 && e.getStartPC == tryRange.start)
 
-  def isLastTryInstruction(instruction: Instruction) =
-    exceptionHandlers.exists(_.lastTryInstruction == instruction)
+      // there is a finally handler in the exception table for each catch handler -> drop 1 + size of catch blocks
+      val toDrop = catchBlocks.size + finallyBlock.fold(0)(_ => 1 + catchBlocks.size)
+      val tail = exceptions.drop(toDrop)
+      findExceptionBlocks(m, tail, exceptionBlocks :+ new ExceptionBlock(m, tryRange, catchBlocks, finallyBlock))
+  }
+}
+
+class ExceptionInfo(exceptionBlocks: List[ExceptionBlock]) {
+
+  def isFirstTryInstruction(instruction: Instruction) =
+    exceptionBlocks.exists(_.firstTryInstruction == instruction)
+
+  def isInTryRange(instruction: Instruction) =
+    exceptionBlocks.exists(_.isInTryRange(instruction))
 
   def isCatchLeader(instruction: Instruction) =
-    exceptionHandlers.exists(_.firstCatchInstruction == instruction)
+    exceptionBlocks.exists(_.catchHandlers.contains(instruction))
 
-  def isInsideTryBlock(instruction: Instruction) =
-    exceptionHandlers.exists(_.handles(instruction))
-
-  def isFinallyLeader(instruction: Instruction) =
-    exceptionHandlers.exists(handler => handler.catchesAnyException && handler.firstCatchInstruction == instruction)
-
-  def findCatchLeaders(instruction: Instruction) = {
-    val catchLeaders =
-      for (exceptionHandler <- exceptionHandlers if exceptionHandler.handles(instruction))
-        yield exceptionHandler.firstCatchInstruction
-
-    // check the successor of the last try instruction
-    instruction.next match {
-      case x: ControlFlowInstruction if x.isGoto =>
-        // it is a branch instruction, so there is no finally block!
-        // -> add the targets of the branch instruction to the leader list
-        x.successors ::: catchLeaders
-      case _ =>
-        // it is not a branch instruction, so there is a finally block!
-        // -> the finally leader is already also in the catch leaders list
-        catchLeaders
+  def findCatchHandlers(gotoInstruction: ControlFlowInstruction) = {
+    val isHandlerPredecessor = exceptionBlocks.exists(_.handlerPredecessor == gotoInstruction)
+    if (isHandlerPredecessor) {
+      exceptionBlocks.find(_.handlerPredecessor == gotoInstruction).map(_.catchHandlers).getOrElse(Nil)
+    } else {
+      Nil
     }
   }
+
+  def isFinallyLeader(instruction: Instruction) =
+    exceptionBlocks.exists(_.finallyHandler.contains(instruction))
+
+  def isWithinFinallyBlock(instruction: Instruction) =
+    exceptionBlocks.exists(_.isWithinFinallyBlock(instruction))
 
 }
 
-private class ExceptionHandler(method: Method, exception: CodeException) {
+private class ExceptionBlock(method: Method, tryRange: Range, catchBlocks: List[CodeException], finallyBlock: Option[CodeException]) {
 
-  def catchesAnyException = exception.getCatchType == 0
+  def firstTryInstruction = method.lookup(tryRange.start)
 
-  def target = exception.getHandlerPC
+  def lastTryInstruction = method.lookup(tryRange.end).prev
 
-  def range = exception.getStartPC until exception.getEndPC
-
-  def firstTryInstruction = method.lookup(exception.getStartPC)
-
-  def lastTryInstruction = method.lookup { i =>
-    i.pc.fold(false)(_ + i.length == exception.getEndPC)
+  def isInTryRange(instruction: Instruction) = instruction.pc match {
+    case Some(pc) =>
+      val range = firstTryInstruction.pc.get to lastTryInstruction.pc.get
+      range.contains(pc)
+    case None =>
+      false
   }
 
-  def firstCatchInstruction = method.lookup(exception.getHandlerPC)
+  def handlerPredecessor: Instruction = handlers(0).prev
 
-  def handles(instruction: Instruction) = instruction.pc.fold(false)(range.contains)
+  def successor = handlers(0).prev.successors.max
+
+  def handlers = catchHandlers ::: finallyHandler.toList
+
+  def catchHandlers =
+    for (catchBlock <- catchBlocks)
+      yield method.lookup(catchBlock.getHandlerPC)
+
+  def finallyHandler =
+    for (fb <- finallyBlock)
+      yield method.lookup(fb.getHandlerPC)
+
+  def isWithinFinallyBlock(instruction: Instruction) = (instruction.pc, finallyBlock) match {
+    case (Some(pc), Some(fb)) if pc >= fb.getHandlerPC =>
+      val finallyRange = fb.getHandlerPC to successor.pc.get
+      finallyRange.contains(pc)
+    case _ =>
+      false
+  }
 
 }

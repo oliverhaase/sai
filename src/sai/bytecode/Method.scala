@@ -44,7 +44,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   lazy val controlFlowGraph: List[BasicBlock] = BasicBlocks(this)
 
-  def exceptionInfo = new ExceptionInfo(this, bcelMethod.getCode.getExceptionTable)
+  lazy val exceptionInfo = ExceptionInfo(this, bcelMethod.getCode.getExceptionTable.toList)
 
   def lookup(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Instruction =
     lookup(_ encapsulates bcelInstruction)

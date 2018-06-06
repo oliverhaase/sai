@@ -113,16 +113,17 @@ public class BasicBlockExamples {
     }
 
     public void ifInFinally() {
+        System.out.println("entry");
         int x = 0;
         try {
             System.out.println("in-try");
             x = new Random().nextInt();
         } finally {
-            if (true) {
-                System.out.println("passed try block successfully");
+            if (x > 5) {
+                System.out.println("x > 5");
             }
         }
-        System.out.println(x);
+        System.out.println("exit");
     }
 
     public void throwsEveryTime() {

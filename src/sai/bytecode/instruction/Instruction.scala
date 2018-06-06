@@ -16,16 +16,11 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
 
   def lineNumber = method.lineNumber(bcelInstruction)
 
-  def length = bcelInstruction.getInstruction.getLength
-
   protected def lookupInstruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle) = 
     method lookup bcelInstruction
 
   def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) =
     bcelInstruction == this.bcelInstruction
-
-  def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
-    this.bcelInstruction != null && bcelInstruction == this.bcelInstruction.getInstruction
 
   def next: Instruction =
     if (bcelInstruction.getNext == null)
@@ -39,7 +34,7 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
 
   def successors: List[Instruction] = {
     bcelInstruction.getInstruction match {
-      case _: org.apache.bcel.generic.ATHROW if !method.exceptionInfo.isThrowInFinallyBlock(this) =>
+      case _: org.apache.bcel.generic.ATHROW =>
         List(method.exitPoint)
       case _: org.apache.bcel.generic.ReturnInstruction =>
         List(method.exitPoint)
@@ -51,7 +46,7 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
     for (candidate <- method.instructions if candidate.successors.contains(this))
       yield candidate
 
-  def isInsideTryBlock = method.exceptionInfo.isInsideTryBlock(this)
+  def isInTryRange = method.exceptionInfo.isInTryRange(this)
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
@@ -90,21 +85,25 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
 
 object Instruction {
 
-  private[this] trait FindCatchLeaders extends Instruction {
-    override def successors: List[Instruction] = {
-      val catchLeaders =
-        if (method.exceptionInfo.isLastTryInstruction(this))
-          method.exceptionInfo.findCatchLeaders(this)
-        else
-          Nil
-      super.successors ::: catchLeaders
+  def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) =
+    bcelInstruction.getInstruction match {
+      case _: org.apache.bcel.generic.GotoInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method) with FindCatchHandlers with IgnoreFinallyBlock
+      case _: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method) with IgnoreFinallyBlock
+      case _ => new Instruction(bcelInstruction, cpg, method) with IgnoreFinallyBlock
     }
+
+  trait FindCatchHandlers extends ControlFlowInstruction {
+    override def successors: List[Instruction] =
+      super.successors ::: method.exceptionInfo.findCatchHandlers(this)
   }
 
-  def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) = 
-    bcelInstruction.getInstruction match {
-      case _: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method)
-      case _ => new Instruction(bcelInstruction, cpg, method) with FindCatchLeaders
-    }
+  trait IgnoreFinallyBlock extends Instruction {
+    override def successors: List[Instruction] =
+      if (method.exceptionInfo.isWithinFinallyBlock(this))
+        Nil
+      else
+        super.successors
+  }
+
 }
 

@@ -24,37 +24,34 @@ object BasicBlocks {
   }
 
 
-  private def merge(blocks: List[BasicBlock]): List[BasicBlock] = {
+  private[this] def merge(blocks: List[BasicBlock]): List[BasicBlock] = {
 
     // we merge blocks by dropping those not necessary
     val constraints = List(
-      dropSingleExitPoint,
-      dropSuccessorOfFinally,
-      dropFinallyAfterTry
+      dropFinallyBlock,
+      dropSingleSuccessorBlock
     )
 
     blocks.filterNot { block =>
-      val drop = constraints.exists(_.lift(block).getOrElse(false))
+      val drop = constraints.exists(constraint => constraint.applyOrElse(block, (_: BasicBlock) => false))
       drop
     }
   }
 
   type DropConstraint = PartialFunction[BasicBlock, Boolean]
 
-  private def dropSingleExitPoint: DropConstraint = {
-    case BasicBlock(_, leader: ExitPoint) if leader.predecessors.size == 1 => true
+  private[this] def dropFinallyBlock: DropConstraint = {
+    case BasicBlock(method, leader) if method.exceptionInfo.isFinallyLeader(leader) =>
+      true
   }
 
-  private def dropSuccessorOfFinally: DropConstraint = {
-    case BasicBlock(m, leader) if leader.predecessors.exists(m.exceptionInfo.isThrowInFinallyBlock) => true
-  }
-
-  private def dropFinallyAfterTry: DropConstraint = {
-    case BasicBlock(m, leader) if m.exceptionInfo.isFinallyLeader(leader) =>
-      leader.predecessors match {
-        case pred :: Nil if m.exceptionInfo.isLastTryInstruction(pred) => true
-        case _ => false
-      }
+  private[this] def dropSingleSuccessorBlock: DropConstraint = {
+    case BasicBlock(method, leader) if method.exceptionInfo.isCatchLeader(leader) =>
+      false
+    case BasicBlock(_, leader) if leader.predecessors.size != 1 =>
+      false
+    case BasicBlock(_, leader) if leader.predecessors.head.successors.size == 1 =>
+      true
   }
 
 }

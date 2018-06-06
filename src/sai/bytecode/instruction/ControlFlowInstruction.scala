@@ -21,6 +21,4 @@ class ControlFlowInstruction(bcelInstruction: org.apache.bcel.generic.Instructio
     case _ => List(next)
   }
 
-  def isGoto = bcelInstruction.getInstruction.isInstanceOf[org.apache.bcel.generic.GotoInstruction]
-
 }
