@@ -6,8 +6,7 @@ import vm.Frame
 
 class EntryPoint(method: Method) extends Instruction(null, null, method) {
 
-  override def prev: Instruction =
-    throw new RuntimeException("this value is not supposed to be used")
+  override def prev: Instruction = null
 
   override def next: Instruction = method.firstInstruction
 
