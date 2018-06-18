@@ -82,11 +82,12 @@ object InvokeSpecialHandler extends InstructionHandler[INVOKESPECIAL] {
 
 object NewHandler extends InstructionHandler[NEW] {
   override def apply(frame: Frame, newInstruction: NEW): Frame = {
-    val objectType = newInstruction.getLoadClassType(frame.cpg)
-    val lineNumber = frame.method.getLineNumber(newInstruction)
-    val objectRef = ObjectRef(objectType, s"O$lineNumber")
-    val updatedStack = frame.opStack.push(objectRef)
-    frame.copy(opStack = updatedStack)
+    frame
+    //val objectType = newInstruction.getLoadClassType(frame.cpg)
+    //val lineNumber = frame.method.getLineNumber(newInstruction)
+    //val objectRef = ObjectRef(objectType, s"O$lineNumber")
+    //val updatedStack = frame.opStack.push(objectRef)
+    //frame.copy(opStack = updatedStack)
   }
 }
 

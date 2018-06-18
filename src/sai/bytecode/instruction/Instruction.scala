@@ -1,6 +1,6 @@
 package sai.bytecode.instruction
 
-import bytecode.instruction.InstructionInterpreter
+import bytecode.instruction.InstructionHandler
 import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
@@ -50,7 +50,7 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
 
   def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
     val inState = inStates.reduce(_ merge _)
-    val outState = InstructionInterpreter.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
+    val outState = InstructionHandler.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
     outState
   }
 
@@ -87,22 +87,16 @@ object Instruction {
 
   def apply(bcelInstruction : org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen, method: Method) =
     bcelInstruction.getInstruction match {
-      case _: org.apache.bcel.generic.GotoInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method) with FindCatchHandlers with IgnoreFinallyBlock
-      case _: org.apache.bcel.generic.BranchInstruction => new ControlFlowInstruction(bcelInstruction, cpg, method) with IgnoreFinallyBlock
-      case _ => new Instruction(bcelInstruction, cpg, method) with IgnoreFinallyBlock
+      case _: org.apache.bcel.generic.BranchInstruction =>
+        new ControlFlowInstruction(bcelInstruction, cpg, method) with FindTargetSuccessors
+      case _ =>
+        new Instruction(bcelInstruction, cpg, method) with FindTargetSuccessors
     }
 
-  trait FindCatchHandlers extends ControlFlowInstruction {
-    override def successors: List[Instruction] =
-      super.successors ::: method.exceptionInfo.findCatchHandlers(this)
-  }
-
-  trait IgnoreFinallyBlock extends Instruction {
-    override def successors: List[Instruction] =
-      if (method.exceptionInfo.isWithinFinallyBlock(this))
-        Nil
-      else
-        super.successors
+  trait FindTargetSuccessors extends Instruction {
+    override def successors: List[Instruction] = {
+      super.successors ::: method.exceptionInfo.findTargetSuccessors(this)
+    }
   }
 
 }

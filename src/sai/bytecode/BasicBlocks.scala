@@ -9,11 +9,11 @@ object BasicBlocks {
 
   def apply(method: Method): List[BasicBlock] = {
 
-    val leaders = method.instructions.flatMap {
-      case i: EntryPoint => Some(i)
-      case i: ExitPoint => Some(i)
-      case i: ControlFlowInstruction => i.next :: i.successors
-      case _ => None
+    val leaders = method.instructions.collect {
+      case i: EntryPoint => i
+      case i: ExitPoint => i
+      case i if (i.prev :: i.predecessors).exists(_.isInstanceOf[ControlFlowInstruction]) => i
+      case i if method.exceptionInfo.isInToList(i) => i
     }.distinct.sorted
 
     val basicBlocks =
@@ -28,7 +28,6 @@ object BasicBlocks {
 
     // we merge blocks by dropping those not necessary
     val constraints = List(
-      dropFinallyBlock,
       dropSingleSuccessorBlock
     )
 
@@ -40,17 +39,10 @@ object BasicBlocks {
 
   type DropConstraint = PartialFunction[BasicBlock, Boolean]
 
-  private[this] def dropFinallyBlock: DropConstraint = {
-    case BasicBlock(method, leader) if method.exceptionInfo.isFinallyLeader(leader) =>
-      true
-  }
-
   private[this] def dropSingleSuccessorBlock: DropConstraint = {
-    case BasicBlock(method, leader) if method.exceptionInfo.isCatchLeader(leader) =>
-      false
     case BasicBlock(_, leader) if leader.predecessors.size != 1 =>
       false
-    case BasicBlock(_, leader) if leader.predecessors.head.successors.size == 1 =>
+    case BasicBlock(_, leader) if leader.predecessors.head.successors.equals(::(leader, Nil)) =>
       true
   }
 
