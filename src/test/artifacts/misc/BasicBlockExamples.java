@@ -178,4 +178,30 @@ public class BasicBlockExamples {
         System.out.println(x);
     }
 
+    public void multipleTryCatch() {
+        try {
+            System.out.println("try1");
+        } catch (Throwable t) {
+            System.out.println("catch1");
+        }
+
+        System.out.println("---");
+
+        try {
+            System.out.println("try2");
+        } catch (Exception e) {
+            System.out.println("catch2");
+        } finally {
+            System.out.println("finally");
+        }
+
+        System.out.println("===");
+
+        try {
+            System.out.println("try3");
+        } finally {
+            System.out.println("finally3");
+        }
+    }
+
 }
