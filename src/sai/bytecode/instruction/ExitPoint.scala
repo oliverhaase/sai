@@ -6,7 +6,7 @@ import vm.Frame
 
 class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
-  override def next: Instruction = method.lastInstruction
+  override def next: Instruction = null
 
   override def prev: Instruction =
     throw new RuntimeException("this value is not supposed to be used")
