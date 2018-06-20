@@ -46,7 +46,7 @@ class ExceptionInfo(method: Method, exceptionTable: List[CodeException]) {
       .filter(e => e.isCatch || !targets.contains(e.from)) // drop catch-finally entries
       .groupBy(e => e.from)
       .values
-      .map(e => e.minBy(_.target))
+      .map(e => e.minBy(_.target)) // exception table does not guarantee any ordering
       .map(e => e.from until e.to)
     tryRanges
   }
