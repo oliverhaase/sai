@@ -292,4 +292,28 @@ class BasicBlockTest extends FlatSpec with Matchers {
     exitBlock.successors shouldBe empty
   }
 
+  it should "define 6 basic blocks for function 'isPalindrome'" in {
+    val palindromeChecker = new Clazz("misc.PalindromeChecker")
+    val isPalindrome = palindromeChecker.method("isPalindrome").get
+    val entryBlock :: whileCheck :: ifCheck :: thenBlock :: elseBlock :: exitBlock :: Nil = isPalindrome.controlFlowGraph
+
+    entryBlock.predecessors shouldBe empty
+    entryBlock.successors shouldEqual List(whileCheck)
+
+    whileCheck.predecessors shouldEqual List(entryBlock, thenBlock)
+    whileCheck.successors shouldEqual List(ifCheck, exitBlock)
+
+    ifCheck.predecessors shouldEqual List(whileCheck)
+    ifCheck.successors shouldEqual List(thenBlock, elseBlock)
+
+    thenBlock.predecessors shouldEqual List(ifCheck)
+    thenBlock.successors shouldEqual List(whileCheck)
+
+    elseBlock.predecessors shouldEqual List(ifCheck)
+    elseBlock.successors shouldEqual List(exitBlock)
+
+    exitBlock.predecessors shouldEqual List(whileCheck, elseBlock)
+    exitBlock.successors shouldBe empty
+  }
+
 }
