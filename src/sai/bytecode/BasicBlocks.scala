@@ -12,7 +12,8 @@ object BasicBlocks {
     val leaders = method.instructions.collect {
       case i: EntryPoint => i
       case i: ExitPoint => i
-      case i if (i.prev :: i.predecessors).exists(_.isInstanceOf[ControlFlowInstruction]) => i
+      case i if i.predecessors.exists(_.isInstanceOf[ControlFlowInstruction]) => i
+      case i if i.prev.isInstanceOf[ControlFlowInstruction] => i
       case i if method.exceptionInfo.isInToList(i) => i
     }.distinct.sorted
 
@@ -25,25 +26,14 @@ object BasicBlocks {
 
 
   private[this] def merge(blocks: List[BasicBlock]): List[BasicBlock] = {
-
-    // we merge blocks by dropping those not necessary
-    val constraints = List(
-      dropSingleSuccessorBlock
-    )
-
-    blocks.filterNot { block =>
-      val drop = constraints.exists(constraint => constraint.applyOrElse(block, (_: BasicBlock) => false))
-      drop
+    blocks.filter {
+      case BasicBlock(_, leader) if leader.predecessors.size != 1 =>
+        true
+      case BasicBlock(_, leader) if leader.predecessors.head.successors.equals(::(leader, Nil)) =>
+        false
+      case _ =>
+        true
     }
-  }
-
-  type DropConstraint = PartialFunction[BasicBlock, Boolean]
-
-  private[this] def dropSingleSuccessorBlock: DropConstraint = {
-    case BasicBlock(_, leader) if leader.predecessors.size != 1 =>
-      false
-    case BasicBlock(_, leader) if leader.predecessors.head.successors.equals(::(leader, Nil)) =>
-      true
   }
 
 }
