@@ -31,16 +31,6 @@ class ExceptionInfoTest extends FlatSpec with Matchers {
     exceptionInfo.findTargetSuccessors(lastTryInstruction) shouldEqual List(firstFinallyInstruction)
   }
 
-  it should "find additional leaders" in {
-    val additionalLeaders =
-      for (
-        instruction <- method.instructions if exceptionInfo.isInToList(instruction);
-        pc <- instruction.pc
-      ) yield pc
-
-    additionalLeaders shouldBe List(8, 36, 56, 94)
-  }
-
   it should "check if an instruction is within a try block" in {
     val insideTryRange =
       for (pc <- List(0, 3, 5, 28, 31, 33, 86, 89, 91))

@@ -24,14 +24,10 @@ class ExceptionInfo(method: Method, exceptionTable: List[CodeException]) {
       Nil
     else instruction.next.pc match {
       case Some(pc) =>
-          for (entry <- exceptionTable if entry.to == pc)
-            yield method.lookup(entry.target)
+        for (entry <- exceptionTable if entry.to == pc)
+          yield method.lookup(entry.target)
       case None => Nil
     }
-  }
-
-  def isInToList(instruction: Instruction) = {
-    instruction.pc.fold(false)(exceptionTable.map(_.to).contains)
   }
 
   def isInTryRange(instruction: Instruction) = {
@@ -52,5 +48,3 @@ class ExceptionInfo(method: Method, exceptionTable: List[CodeException]) {
   }
 
 }
-
-
