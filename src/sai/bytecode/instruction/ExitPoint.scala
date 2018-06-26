@@ -13,8 +13,6 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
   override def successors: List[Instruction] = List()
 
-  override def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = frame
-
   override def lineNumber: Int = method.lastInstruction.lineNumber
 
   override def compare(that: Instruction): Int = 1

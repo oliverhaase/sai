@@ -12,8 +12,6 @@ class EntryPoint(method: Method) extends Instruction(null, null, method) {
 
   override def successors: List[Instruction] = List(next)
 
-  override def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = frame
-
   override def lineNumber: Int = method.firstInstruction.lineNumber - 1
 
   override def compare(that: Instruction): Int = -1

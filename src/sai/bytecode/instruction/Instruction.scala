@@ -1,10 +1,9 @@
 package sai.bytecode.instruction
 
-import bytecode.instruction.InstructionHandler
-import cg.ConnectionGraph
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import vm.Frame
+import vm.interpreter.InstructionInterpreter
 
 class Instruction(protected val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
     val method: Method) extends Ordered[Instruction] {
@@ -42,17 +41,20 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
     }
   }
 
+  def interpret(frame: Frame): Frame = {
+    if (bcelInstruction == null)
+      frame
+    else {
+      val interpreter = InstructionInterpreter(this.bcelInstruction.getInstruction)
+      interpreter(frame)
+    }
+  }
+
   final def predecessors: List[Instruction] =
     for (candidate <- method.instructions if candidate.successors.contains(this))
       yield candidate
 
   def isInTryRange = method.exceptionInfo.isInTryRange(this)
-
-  def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
-    val inState = inStates.reduce(_ merge _)
-    val outState = InstructionHandler.handle(frame.copy(cg = inState), bcelInstruction.getInstruction)
-    outState
-  }
 
   override def toString = {
     val info = bcelInstruction.getInstruction match {

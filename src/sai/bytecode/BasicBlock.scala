@@ -24,11 +24,6 @@ class BasicBlock(val method: Method, val leader: Instruction) {
     for (basicBlock <- method.controlFlowGraph if basicBlock.successors.contains(this))
       yield basicBlock
 
-  def transfer(frame: Frame, inStates: Set[ConnectionGraph]): Frame = {
-    val inState = inStates.reduce(_ merge _)
-    frame
-  }
-
   private lazy val lastInstruction: Instruction = {
     val leaders =
       for (basicBlock <- method.controlFlowGraph)
@@ -43,7 +38,7 @@ class BasicBlock(val method: Method, val leader: Instruction) {
     findLast(leader)
   }
 
-  private def instructions: List[Instruction] = {
+  def instructions: List[Instruction] = {
     val last = lastInstruction
     @tailrec
     def collectUntilLast(i: Instruction, instructions: List[Instruction]): List[Instruction] = {
