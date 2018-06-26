@@ -1,11 +1,13 @@
 package sai.bytecode
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 import bytecode.BasicBlock
 import bytecode.ExceptionInfo
 import bytecode.BasicBlocks
 import cg.ConnectionGraph
+import cg.ObjectNode
 import org.apache.bcel.generic.ConstantPoolGen
 import org.apache.bcel.generic.InstructionList
 import org.apache.bcel.generic.InstructionHandle
@@ -14,6 +16,7 @@ import sai.bytecode.instruction.EntryPoint
 import sai.bytecode.instruction.ExitPoint
 import sai.vm.ObjectRef
 import vm.Frame
+import vm.interpreter.InstructionInterpreter
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
 
@@ -69,14 +72,14 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         case basicType: org.apache.bcel.generic.BasicType =>
           argReferences(index + basicType.getSize, bcelArgs.tail)
         case referenceType: org.apache.bcel.generic.ReferenceType =>
-          argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, "bla"))
+          argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, clazz.name, ObjectNode("unique")))
       }
 
   val inputReferences: Map[Int, ObjectRef] =
     if ( bcelMethod.isStatic )
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(null /*TODO insert correct class type here*/ , clazz.name))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(null /*TODO insert correct class type here*/ , clazz.name, ObjectNode("unique")))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
@@ -85,35 +88,32 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-    val worklist = controlFlowGraph.toBuffer
     var frame = Frame(this)
-
-    // store the out state for each instruction (initialized with an empty connection graph)
-    val outStates = mutable.Map.empty[BasicBlock, ConnectionGraph]
-    outStates ++= worklist.map(basicBlock => (basicBlock, ConnectionGraph.empty())).toMap
+    val firstBasicBlock = controlFlowGraph.head
+    val worklist = scala.collection.mutable.Buffer[BasicBlock](firstBasicBlock)
+    val outState = scala.collection.mutable.Map[BasicBlock, ConnectionGraph](firstBasicBlock -> ConnectionGraph.empty())
 
     // we use an upper bound in case the out states don't converge (i.e. we never reach a fixed point)
-    val upperBound = 10 * worklist.size
+    val upperBound = 10
     var iteration = 0
 
     while (worklist.nonEmpty && iteration < upperBound) {
       iteration += 1
 
-      val head = worklist.remove(0)
-      val before = outStates(head)
-      val inStates = head.predecessors.map(predecessor => outStates(predecessor))
-      match {
-        case Nil => ConnectionGraph.empty()
-        case nonEmptyList => nonEmptyList
-      }
-      //frame = head.transfer(frame, inStates)
-      outStates(head) = frame.cg
+      val basicBlock = worklist.remove(0)
+      val cgBefore = outState(basicBlock)
+      val outStates = basicBlock.predecessors.map(outState)
+      val inState = outStates.fold(ConnectionGraph.empty())(_ merge _)
+      frame = frame.copy(cg = inState)
+      frame = basicBlock.instructions.foldLeft(frame)((frame, i) => i.interpret(frame))
+      val cgAfter = frame.cg
+      outState(basicBlock) = cgAfter
 
       // out state changed => we have to recalculate the out states for each successor
-      if (before != frame.cg) {
+      if (cgBefore != cgBefore) {
         // prepend successors so that operand stack stays correct
-        worklist --= head.successors
-        worklist.prependAll(head.successors)
+        worklist --= basicBlock.successors
+        worklist.prependAll(basicBlock.successors)
       }
     }
     frame.cg
