@@ -1,9 +1,9 @@
 package cg
 
-import cg.EscapeSet.EscapeSet
 import cg.EscapeStates.EscapeState
-import cg.EscapeStates._
 
 object EscapeSet {
-  type EscapeSet = scala.collection.immutable.HashMap[Node, EscapeState]
+  type EscapeSet = Map[Node, EscapeState]
+  def apply(): EscapeSet = Map.empty[Node, EscapeState]
+  def apply(data: (Node, EscapeState)*): EscapeSet = data.toMap
 }
