@@ -69,4 +69,38 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
     mergedCG.escapeSet shouldEqual EscapeSet(o1 -> NoEscape, o2 -> GlobalEscape, o3 -> ArgEscape)
   }
 
+  it should "bypass a local variable" in {
+    val o1 = ObjectNode("o1")
+    val oN = ObjectNode("oN")
+    val p = LocalReferenceNode("p")
+    val s1 = LocalReferenceNode("s1")
+    val sK = LocalReferenceNode("sK")
+    val r1 = LocalReferenceNode("r1")
+    val rM = LocalReferenceNode("rM")
+    val nodesBeforeBypass: Set[Node] = Set(o1, oN, p, s1, sK, r1, rM)
+
+    val edgesBeforeBypass = Set[Edge](
+      DeferredEdge(s1 -> p),
+      DeferredEdge(sK -> p),
+      DeferredEdge(p -> r1),
+      DeferredEdge(p -> rM),
+      PointsToEdge(p -> o1),
+      PointsToEdge(p -> oN)
+    )
+
+    val cgBefore = ConnectionGraph(nodesBeforeBypass, edgesBeforeBypass, EscapeSet())
+    val cgAfter = cgBefore.byPass(p)
+    cgAfter.nodes shouldEqual nodesBeforeBypass
+    cgAfter.edges shouldEqual Set[Edge](
+      DeferredEdge(s1 -> r1),
+      DeferredEdge(s1 -> rM),
+      DeferredEdge(sK -> r1),
+      DeferredEdge(sK -> rM),
+      PointsToEdge(s1 -> o1),
+      PointsToEdge(s1 -> oN),
+      PointsToEdge(sK -> o1),
+      PointsToEdge(sK -> oN)
+    )
+  }
+
 }

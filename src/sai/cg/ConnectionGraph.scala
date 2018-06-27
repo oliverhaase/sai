@@ -55,8 +55,41 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
     }
   }
 
+  /**
+   * Add a points-to edge to the connection graph.
+   *
+   * @param pointsToEdge Edge to add to the graph.
+   * @return A connection graph with the added edge.
+   */
   def addPointsToEdge(pointsToEdge: PointsToEdge): ConnectionGraph = {
-    this
+    if (edges.contains(pointsToEdge)) {
+      this
+    } else {
+      copy(edges = edges + pointsToEdge)
+    }
+  }
+
+  /**
+   * Kill local variable (i.e. redirect ingoing edges on the local variable).
+   * @param p local reference node to kill.
+   * @return A connection graph with the localReferenceNode bypassed.
+   */
+  def byPass(p: LocalReferenceNode): ConnectionGraph = {
+    val R = edges.collect { case DeferredEdge(r, `p`) => r }
+    val S = edges.collect { case PointsToEdge(`p`, s) => s }
+    val T = edges.collect { case DeferredEdge(`p`, t) => t }
+
+    val edgesToRemove = edges.collect {
+      case e @ DeferredEdge(r, `p`) if R.contains(r) => e
+      case e @ PointsToEdge(`p`, s) if S.contains(s) => e
+      case e @ DeferredEdge(`p`, t) if T.contains(t) => e
+    }
+
+    val newPointsToEdges = for (r <- R; s <- S) yield PointsToEdge(r -> s)
+    val newDeferredEdges = for (r <- R; t <- T) yield DeferredEdge(r -> t)
+
+    val newEdges = edges -- edgesToRemove ++ newPointsToEdges ++ newDeferredEdges
+    copy(edges = newEdges)
   }
 
   /**
