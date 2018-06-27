@@ -42,7 +42,7 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
     cg.pointsTo(d) shouldBe Set()
   }
 
-  it should "have a pretty 'toString' represenation" in {
+  it should "have a pretty 'toString' representation" in {
     val a = LocalReferenceNode("a")
     val b = ObjectNode("b")
 
