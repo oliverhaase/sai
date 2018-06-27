@@ -58,29 +58,33 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
   /**
    * Add a points-to edge to the connection graph.
    *
-   * @param pointsToEdge Edge to add to the graph.
+   * @param edge Edge to add to the graph.
    * @return A connection graph with the added edge.
    */
-  def addPointsToEdge(pointsToEdge: PointsToEdge): ConnectionGraph = {
-    if (edges.contains(pointsToEdge)) {
+  def addEdge(edge: Edge): ConnectionGraph = {
+    if (edges.contains(edge)) {
       this
     } else {
-      copy(edges = edges + pointsToEdge)
+      copy(edges = edges + edge)
     }
   }
 
   /**
-   * Kill local variable (i.e. redirect ingoing edges on the local variable).
+   * Kill local variable (i.e. bypass ingoing/outgoing edges).
    *
    * @param p local reference node to kill.
    * @return A connection graph with the localReferenceNode bypassed.
    */
   def byPass(p: LocalReferenceNode): ConnectionGraph = {
-    val ingoingDeferredEdges  = edges.collect { case edge @ DeferredEdge(_, `p`) => edge }
-    val outgoingPointsToEdges = edges.collect { case edge @ PointsToEdge(`p`, _) => edge }
-    val outgoingDeferredEdges = edges.collect { case edge @ DeferredEdge(`p`, _) => edge }
-
-    val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
+    val ingoingDeferredEdges  = edges.collect {
+      case edge @ DeferredEdge(_, `p`) => edge
+    }
+    val outgoingPointsToEdges = edges.collect {
+      case edge @ PointsToEdge(`p`, _) => edge
+    }
+    val outgoingDeferredEdges = edges.collect {
+      case edge @ DeferredEdge(`p`, _) => edge
+    }
 
     val bypassedPointsToEdges =
       for (
@@ -94,8 +98,10 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
         out <- outgoingDeferredEdges
       ) yield DeferredEdge(in.from -> out.to)
 
-    val newEdges = edges -- edgesToRemove ++ bypassedPointsToEdges ++ bypassedDeferredEdges
-    copy(edges = newEdges)
+    val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
+    val edgesToAdd = bypassedPointsToEdges ++ bypassedDeferredEdges
+
+    copy(edges = edges -- edgesToRemove ++ edgesToAdd)
   }
 
   /**
