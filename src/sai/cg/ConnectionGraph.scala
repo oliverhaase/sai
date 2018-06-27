@@ -71,24 +71,30 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
 
   /**
    * Kill local variable (i.e. redirect ingoing edges on the local variable).
+   *
    * @param p local reference node to kill.
    * @return A connection graph with the localReferenceNode bypassed.
    */
   def byPass(p: LocalReferenceNode): ConnectionGraph = {
-    val R = edges.collect { case DeferredEdge(r, `p`) => r }
-    val S = edges.collect { case PointsToEdge(`p`, s) => s }
-    val T = edges.collect { case DeferredEdge(`p`, t) => t }
+    val ingoingDeferredEdges  = edges.collect { case edge @ DeferredEdge(_, `p`) => edge }
+    val outgoingPointsToEdges = edges.collect { case edge @ PointsToEdge(`p`, _) => edge }
+    val outgoingDeferredEdges = edges.collect { case edge @ DeferredEdge(`p`, _) => edge }
 
-    val edgesToRemove = edges.collect {
-      case e @ DeferredEdge(r, `p`) if R.contains(r) => e
-      case e @ PointsToEdge(`p`, s) if S.contains(s) => e
-      case e @ DeferredEdge(`p`, t) if T.contains(t) => e
-    }
+    val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
 
-    val newPointsToEdges = for (r <- R; s <- S) yield PointsToEdge(r -> s)
-    val newDeferredEdges = for (r <- R; t <- T) yield DeferredEdge(r -> t)
+    val bypassedPointsToEdges =
+      for (
+        in <- ingoingDeferredEdges;
+        out <- outgoingPointsToEdges
+      ) yield PointsToEdge(in.from -> out.to)
 
-    val newEdges = edges -- edgesToRemove ++ newPointsToEdges ++ newDeferredEdges
+    val bypassedDeferredEdges =
+      for (
+        in <- ingoingDeferredEdges;
+        out <- outgoingDeferredEdges
+      ) yield DeferredEdge(in.from -> out.to)
+
+    val newEdges = edges -- edgesToRemove ++ bypassedPointsToEdges ++ bypassedDeferredEdges
     copy(edges = newEdges)
   }
 
