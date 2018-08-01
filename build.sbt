@@ -16,5 +16,7 @@ unmanagedSourceDirectories in Test += baseDirectory.value / "src/test/artifacts"
 
 libraryDependencies ++= Seq(
   "org.apache.bcel" % "bcel" % "6.2",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "org.graphstream" % "gs-core" % "1.3",
+  "org.graphstream" % "gs-ui" % "1.3"
 )
