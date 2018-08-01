@@ -5,8 +5,12 @@ import sai.bytecode.Method
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 
-class Instruction(protected val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
-    val method: Method) extends Ordered[Instruction] {
+class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
+                  val method: Method) extends Ordered[Instruction] {
+
+  def id: String = buildId(bcelInstruction.getPosition.toString)
+
+  protected def buildId(position: String) = s"${method.clazz.name}.${method.name},position=$position"
 
   final def pc: Option[Int] =
     if (bcelInstruction == null)
@@ -20,6 +24,9 @@ class Instruction(protected val bcelInstruction: org.apache.bcel.generic.Instruc
 
   def encapsulates(bcelInstruction: org.apache.bcel.generic.InstructionHandle) =
     bcelInstruction == this.bcelInstruction
+
+  def encapsulates(bcelInstruction: org.apache.bcel.generic.Instruction) =
+    this.bcelInstruction != null && this.bcelInstruction.getInstruction.eq(bcelInstruction)
 
   def next: Instruction =
     if (bcelInstruction.getNext == null)

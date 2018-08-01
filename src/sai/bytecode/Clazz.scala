@@ -8,6 +8,8 @@ class Clazz(val name: String) {
   val bcelClass: JavaClass = Repository.lookupClass(name)
   val cpg: ConstantPoolGen = new ConstantPoolGen(bcelClass.getConstantPool)
 
+  val classType = org.apache.bcel.generic.Type.getType(Class.forName(name)).asInstanceOf[org.apache.bcel.generic.ReferenceType]
+
   val methods: List[Method] =
     for (bcelMethod <- bcelClass.getMethods.toList) yield new Method(bcelMethod, cpg, this)
 

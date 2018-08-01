@@ -1,10 +1,10 @@
 package sai.bytecode.instruction
 
-import cg.ConnectionGraph
 import sai.bytecode.Method
-import vm.Frame
 
 class ExitPoint(method: Method) extends Instruction(null, null, method) {
+
+  override def id: String = buildId("exit")
 
   override def next: Instruction = null
 
