@@ -1,6 +1,6 @@
 package sai.vm
 
-import cg.ObjectNode
+import cg.Node
 
 sealed trait Slot
 
@@ -8,15 +8,20 @@ object PrimitiveSlot extends Slot {
   override def toString: String = "primitive"
 }
 
-case class ThisObject(referenceType: String) extends Slot {
+case class Reference(referenceType: org.apache.bcel.generic.Type, node: Node) extends Slot {
+  override def toString: String = s"$referenceType/$node"
+}
+
+case class ParameterObject(referenceType: org.apache.bcel.generic.Type) extends Slot {
+  override def toString: String = s"$referenceType/param"
+}
+
+case class ThisObject(referenceType: String, node: Node) extends Slot {
   override def toString: String = referenceType
 }
 
-case class ObjectRef(referenceType: org.apache.bcel.generic.Type, className: String, objectNode: ObjectNode) extends Slot {
-  override def toString: String = s"$referenceType/$className/$objectNode"
-}
+case object Null extends Slot
 
-case class StaticRef(name: String) extends Slot {
-  override def toString: String = s"static/$name"
-}
+case object DontCare extends Slot
+
 
