@@ -4,6 +4,8 @@ import scala.annotation.tailrec
 
 case class Stack[T](private val elements: List[T]) {
 
+  def push(element: T, i: Int): Stack[T] = copy(List.fill(i)(element) ::: elements)
+
   def depth: Int = elements.size
 
   def push(element: T): Stack[T] = copy(element :: elements)
@@ -12,18 +14,12 @@ case class Stack[T](private val elements: List[T]) {
 
   def peek: T = elements.head
 
-  def pop: (T, Stack[T]) = {
-    val (poppedElement :: Nil, newStack) = pop(1)
-    (poppedElement, newStack)
-  }
+  def pop: Stack[T] = copy(elements.tail)
 
-  def pop(n: Int): (List[T], Stack[T]) = {
-    @tailrec
-    def popRec(x: Int, elems: List[T], poppedElements: List[T]): (List[T], Stack[T]) = {
-      if (x == 0) (poppedElements, Stack(elems))
-      else popRec(x - 1, elems.tail, poppedElements :+ elems.head)
-    }
-    popRec(n, elements, Nil)
+  @tailrec
+  final def pop(n: Int): Stack[T] = n match {
+    case 0 => this
+    case x => pop.pop(x - 1)
   }
 }
 

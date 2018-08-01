@@ -13,7 +13,7 @@ class StackTest extends FlatSpec with Matchers {
     stack.depth shouldBe 1
     stack = stack.push(98)
     stack.depth shouldBe 2
-    val (_, emptyStack) = stack.pop(2)
+    val emptyStack = stack.pop(2)
     emptyStack.depth shouldBe 0
   }
 
