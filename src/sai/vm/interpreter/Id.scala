@@ -1,10 +1,14 @@
 package vm.interpreter
 
-private[interpreter] object Id {
+import sai.bytecode.Method
 
-  private val ids = scala.collection.mutable.Map.empty[org.apache.bcel.generic.Instruction, String]
 
-  def apply(i: org.apache.bcel.generic.Instruction): String = {
-    ids.getOrElseUpdate(i, ids.size.toString)
+object Id {
+
+  type Id = String
+
+  def apply(method: Method, i: org.apache.bcel.generic.Instruction): Id = {
+    method.lookup(i).id
   }
+
 }
