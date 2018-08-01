@@ -4,11 +4,10 @@ import org.apache.bcel.generic.DUP
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 
-private[interpreter] object DupInterpreter extends InstructionInterpreter[org.apache.bcel.generic.DUP] {
+private[interpreter] object DupInterpreter extends InstructionInterpreter[DUP] {
   override def apply(i: DUP): Frame => Frame = {
-    frame =>
-      val updatedStack = frame.opStack.dup
-      val updatedFrame = frame.copy(opStack = updatedStack)
-      updatedFrame
+    case frame @ Frame(_, _, stack, _, _) =>
+      val updatedStack = stack.dup
+      frame.copy(stack = updatedStack)
   }
 }

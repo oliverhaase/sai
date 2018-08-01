@@ -4,12 +4,12 @@ import org.apache.bcel.generic.ASTORE
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 
-private[interpreter] object AstoreInterpreter extends InstructionInterpreter[org.apache.bcel.generic.ASTORE] {
+private[interpreter] object AstoreInterpreter extends InstructionInterpreter[ASTORE] {
   override def apply(i: ASTORE): Frame => Frame = {
-    frame =>
-      val (objectRef, updatedStack) = frame.opStack.pop
-      val updatedLocalVars = frame.localVars.set(i.getIndex, objectRef)
-      val updatedFrame = frame.copy(opStack = updatedStack, localVars = updatedLocalVars)
-      updatedFrame
+    case frame @ Frame(_, _, stack, localVars, _) =>
+      val slot = stack.peek
+      val updatedStack = stack.pop
+      val updatedLocalVars = localVars.set(i.getIndex, slot)
+      frame.copy(stack = updatedStack, localVars = updatedLocalVars)
   }
 }
