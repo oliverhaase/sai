@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Set
 
 import cg.EscapeSet.EscapeSet
+import cg.EscapeStates.EscapeState
 
 case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: EscapeSet) {
 
@@ -25,11 +26,11 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
     val N2 = other.nodes
     val N3 = N1.union(N2)
 
-    (for (n3 <- N3)
-      yield {
-        val n1 = N1.find(n1 => n1.id == n3.id)
-        val n2 = N2.find(n2 => n2.id == n3.id)
-        val n3es = (n1, n2) match {
+    (for {
+      n3 <- N3
+      n1 = N1.find(n1 => n1.id == n3.id)
+      n2 = N2.find(n2 => n2.id == n3.id)
+      n3es = (n1, n2) match {
           case (Some(node1), Some(node2)) =>
             EscapeStates.merge(this.escapeSet(node1), other.escapeSet(node2))
           case (Some(node1), _) =>
@@ -37,36 +38,62 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
           case (_, Some(node2)) =>
             other.escapeSet(node2)
         }
-        (n3, n3es)
-      }).toMap
+    } yield (n3, n3es)).toMap
+
   }
 
   /**
-   * Add a node if the graph does not already contain it.
+    * Add a variable number of nodes to the CG.
+    *
+    * @param nodes variable argument list of nodes.
+    * @return A connection graph with the added nodes.
+    */
+  def addNodes(nodes: Node*): ConnectionGraph = {
+    copy(nodes = this.nodes ++ nodes)
+  }
+
+  def addNodes(nodes: Set[_ <: Node]): ConnectionGraph = {
+    copy(nodes = this.nodes ++ nodes)
+  }
+
+  /**
+    * Add a node to the CG.
    *
    * @param node Node to add to the graph.
    * @return A connection graph with the added node.
    */
   def addNode(node: Node): ConnectionGraph = {
-    if (nodes.exists(_.id == node.id)) {
-      this
-    } else {
       copy(nodes = nodes + node)
     }
+
+  /**
+    * Add an edge to the connection graph.
+    *
+    * @param fromTo Edge to add to the graph.
+    * @return A connection graph with the added edge.
+    */
+  def addEdge(fromTo: (Node, Node)): ConnectionGraph = {
+    val edge = fromTo match {
+      case (local: LocalReferenceNode, obj: ObjectNode) => PointsToEdge(local -> obj)
+      case (obj: ObjectNode, field: FieldReferenceNode) => FieldEdge(obj -> field)
+      case (ref1: ReferenceNode, ref2: ReferenceNode) => DeferredEdge(ref1 -> ref2)
+      case (from, to) => throw new IllegalArgumentException(s"cannot create an edge for types ${from.getClass.getSimpleName} -> ${to.getClass.getSimpleName}")
+    }
+    addEdge(edge)
   }
 
   /**
-   * Add a points-to edge to the connection graph.
+    * Add an edge to the connection graph.
    *
    * @param edge Edge to add to the graph.
    * @return A connection graph with the added edge.
    */
   def addEdge(edge: Edge): ConnectionGraph = {
-    if (edges.contains(edge)) {
-      this
-    } else {
       copy(edges = edges + edge)
     }
+
+  def addEdges(edges: Set[Edge]): ConnectionGraph = {
+    copy(edges = this.edges ++ edges)
   }
 
   /**
@@ -87,16 +114,16 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
     }
 
     val bypassedPointsToEdges =
-      for (
-        in <- ingoingDeferredEdges;
+      for {
+        in <- ingoingDeferredEdges
         out <- outgoingPointsToEdges
-      ) yield PointsToEdge(in.from -> out.to)
+      } yield PointsToEdge(in.from -> out.to)
 
     val bypassedDeferredEdges =
-      for (
-        in <- ingoingDeferredEdges;
+      for {
+        in <- ingoingDeferredEdges
         out <- outgoingDeferredEdges
-      ) yield DeferredEdge(in.from -> out.to)
+      } yield DeferredEdge(in.from -> out.to)
 
     val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
     val edgesToAdd = bypassedPointsToEdges ++ bypassedDeferredEdges
@@ -137,7 +164,7 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
    */
   private def isTerminalNode(node: ReferenceNode) = pointsTo(node).isEmpty
 
-  override def toString: String = s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}"
+  override def toString: String = s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeSet.mkString("\n\t")}"
 
 }
 
