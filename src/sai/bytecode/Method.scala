@@ -142,7 +142,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
     val basicBlock = firstBasicBlock
     val inFrame = initialFrame
-    val outFrame = basicBlock.instructions.foldLeft(inFrame)((frame, i) => i.interpret(frame))
+    val outFrame = basicBlock.interpret(inFrame)
     outFrame.cg
 
     /*

@@ -1,14 +1,10 @@
 package bytecode
 
-import scala.annotation.tailrec
-
-import cg.ConnectionGraph
 import sai.bytecode.Method
-import sai.bytecode.instruction.Instruction
-import sai.bytecode.instruction.ExitPoint
-import sai.bytecode.instruction.ControlFlowInstruction
-import sai.bytecode.instruction.EntryPoint
+import sai.bytecode.instruction.{ExitPoint, Instruction}
 import vm.Frame
+
+import scala.annotation.tailrec
 
 class BasicBlock(val method: Method, val leader: Instruction) {
 
@@ -24,6 +20,8 @@ class BasicBlock(val method: Method, val leader: Instruction) {
     for (basicBlock <- method.controlFlowGraph if basicBlock.successors.contains(this))
       yield basicBlock
 
+  def interpret(inFrame: Frame) = instructions.foldLeft(inFrame)((frame, i) => i.interpret(frame))
+
   private lazy val lastInstruction: Instruction = {
     val leaders =
       for (basicBlock <- method.controlFlowGraph)
@@ -33,7 +31,9 @@ class BasicBlock(val method: Method, val leader: Instruction) {
     def findLast(instruction: Instruction): Instruction = instruction match {
       case ep: ExitPoint => ep
       case i if i.successors.exists(leaders.contains) => i
-      case i => findLast(i.next)
+      case i =>
+        assert(i.successors.lengthCompare(1) == 0)
+        findLast(i.successors.head)
     }
     findLast(leader)
   }
