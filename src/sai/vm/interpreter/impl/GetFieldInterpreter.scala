@@ -7,6 +7,7 @@ import sai.vm.{DontCare, Null, Reference}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 import vm.interpreter.Id
+import cg.NoEscape
 
 private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[GETFIELD] {
   override def apply(i: GETFIELD): Frame => Frame = {
@@ -40,12 +41,17 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
               val referenceNode = LocalReferenceNode(Id(method, i))
               val deferredEdges = for {fieldNode <- fieldNodes} yield DeferredEdge(referenceNode -> fieldNode)
 
+              val allNodes = fieldNodes ++ Set(referenceNode)
+              val allEdges = fieldEdges ++ deferredEdges
+
               updatedCG = updatedCG
-                .addNodes(fieldNodes ++ Set(referenceNode))
-                .addEdges(fieldEdges ++ deferredEdges)
+                .addNodes(allNodes)
+                .addEdges(allEdges)
+                .updateEscapeStates(allNodes -> NoEscape)
 
               val updatedStack = stack.push(Reference(refType, referenceNode))
               frame.copy(stack = updatedStack, cg = updatedCG)
+            case _ => throw new IllegalStateException()
           }
         case _ =>
           val updatedStack = stack.push(DontCare, i.produceStack(cpg))

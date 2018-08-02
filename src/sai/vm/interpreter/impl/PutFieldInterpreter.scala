@@ -5,6 +5,7 @@ import org.apache.bcel.generic.{PUTFIELD, ReferenceType}
 import sai.vm.{Null, Reference}
 import vm.Frame
 import vm.interpreter.{Id, InstructionInterpreter}
+import cg.NoEscape
 
 private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[PUTFIELD] {
   override def apply(i: PUTFIELD): Frame => Frame = {

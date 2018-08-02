@@ -1,20 +1,14 @@
 package cg
 
-import scala.annotation.tailrec
+sealed abstract class EscapeState(private val id: Int, private val s: String) extends Ordered[EscapeState] {
 
-object EscapeStates extends Enumeration {
-  type EscapeState = Value
+  def merge(other: EscapeState): EscapeState = if (this < other) this else other
 
-  val GlobalEscape: EscapeState = Value(0, "⊥")
-  val ArgEscape: EscapeState = Value(1)
-  val NoEscape: EscapeState = Value(2, "⊤")
+  override def compare(other: EscapeState): Int = id.compareTo(other.id)
 
-  @tailrec
-  def merge(es: EscapeState, es2: EscapeState): EscapeState = (es, es2) match {
-    case (`es`, `es`) => es
-    case (`es`, NoEscape) => es
-    case (`es`, GlobalEscape) => GlobalEscape
-    case _ => merge(es2, es)
-  }
-
+  override def toString: String = s
 }
+
+case object GlobalEscape extends EscapeState(0, "⊥")
+case object ArgEscape extends EscapeState(1, "-")
+case object NoEscape extends EscapeState(2, "⊤")

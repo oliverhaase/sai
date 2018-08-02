@@ -5,7 +5,7 @@ import org.apache.bcel.generic.{PUTSTATIC, ReferenceType}
 import sai.vm.{Null, Reference}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
-import cg.EscapeStates.GlobalEscape
+import cg.GlobalEscape
 
 private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[PUTSTATIC] {
   override def apply(i: PUTSTATIC): Frame => Frame = {

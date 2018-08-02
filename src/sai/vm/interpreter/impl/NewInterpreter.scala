@@ -1,13 +1,10 @@
 package vm.interpreter.impl
 
-import cg.ObjectNode
-import cg.LocalReferenceNode
-import cg.EscapeStates.EscapeState
+import cg._
 import org.apache.bcel.generic.{NEW, ObjectType}
 import sai.vm.Reference
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
-import cg.EscapeStates._
 import vm.interpreter.Id
 
 private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {

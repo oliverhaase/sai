@@ -3,17 +3,16 @@ package cg
 import scala.annotation.tailrec
 import scala.collection.immutable.Set
 
-import cg.EscapeSet.EscapeSet
-import cg.EscapeStates.EscapeState
+import cg.EscapeMap.EscapeMap
 
-case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: EscapeSet) {
+case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: EscapeMap) {
 
   /**
-   * Merge connection graph with another connection graph.
-   *
-   * @param other Connection graph to merge.
-   * @return A new connection graph which represents the merge.
-   */
+    * Merge connection graph with another connection graph.
+    *
+    * @param other Connection graph to merge.
+    * @return A new connection graph which represents the merge.
+    */
   def merge(other: ConnectionGraph): ConnectionGraph = {
     val newNodes = nodes.union(other.nodes)
     val newEdges = edges.union(other.edges)
@@ -21,7 +20,7 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
     ConnectionGraph(newNodes, newEdges, newEscapeSet)
   }
 
-  private def mergeEscapeSets(other: ConnectionGraph): EscapeSet = {
+  private def mergeEscapeSets(other: ConnectionGraph): EscapeMap = {
     val N1 = this.nodes
     val N2 = other.nodes
     val N3 = N1.union(N2)
@@ -31,13 +30,14 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
       n1 = N1.find(n1 => n1.id == n3.id)
       n2 = N2.find(n2 => n2.id == n3.id)
       n3es = (n1, n2) match {
-          case (Some(node1), Some(node2)) =>
-            EscapeStates.merge(this.escapeSet(node1), other.escapeSet(node2))
-          case (Some(node1), _) =>
-            this.escapeSet(node1)
-          case (_, Some(node2)) =>
-            other.escapeSet(node2)
-        }
+        case (Some(node1), Some(node2)) =>
+          this.escapeMap(node1).merge(other.escapeMap(node2))
+        case (Some(node1), _) =>
+          this.escapeMap(node1)
+        case (_, Some(node2)) =>
+          other.escapeMap(node2)
+        case _ => throw new IllegalStateException()
+      }
     } yield (n3, n3es)).toMap
 
   }
@@ -58,13 +58,13 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
 
   /**
     * Add a node to the CG.
-   *
-   * @param node Node to add to the graph.
-   * @return A connection graph with the added node.
-   */
+    *
+    * @param node Node to add to the graph.
+    * @return A connection graph with the added node.
+    */
   def addNode(node: Node): ConnectionGraph = {
-      copy(nodes = nodes + node)
-    }
+    copy(nodes = nodes + node)
+  }
 
   /**
     * Add an edge to the connection graph.
@@ -84,33 +84,33 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
 
   /**
     * Add an edge to the connection graph.
-   *
-   * @param edge Edge to add to the graph.
-   * @return A connection graph with the added edge.
-   */
+    *
+    * @param edge Edge to add to the graph.
+    * @return A connection graph with the added edge.
+    */
   def addEdge(edge: Edge): ConnectionGraph = {
-      copy(edges = edges + edge)
-    }
+    copy(edges = edges + edge)
+  }
 
-  def addEdges(edges: Set[Edge]): ConnectionGraph = {
+  def addEdges(edges: Set[_ <: Edge]): ConnectionGraph = {
     copy(edges = this.edges ++ edges)
   }
 
   /**
-   * Kill local variable (i.e. bypass ingoing/outgoing edges).
-   *
-   * @param p local reference node to kill.
-   * @return A connection graph with the localReferenceNode bypassed.
-   */
+    * Kill local variable (i.e. bypass ingoing/outgoing edges).
+    *
+    * @param p local reference node to kill.
+    * @return A connection graph with the localReferenceNode bypassed.
+    */
   def byPass(p: LocalReferenceNode): ConnectionGraph = {
-    val ingoingDeferredEdges  = edges.collect {
-      case edge @ DeferredEdge(_, `p`) => edge
+    val ingoingDeferredEdges = edges.collect {
+      case edge@DeferredEdge(_, `p`) => edge
     }
     val outgoingPointsToEdges = edges.collect {
-      case edge @ PointsToEdge(`p`, _) => edge
+      case edge@PointsToEdge(`p`, _) => edge
     }
     val outgoingDeferredEdges = edges.collect {
-      case edge @ DeferredEdge(`p`, _) => edge
+      case edge@DeferredEdge(`p`, _) => edge
     }
 
     val bypassedPointsToEdges =
@@ -132,11 +132,35 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
   }
 
   /**
-   * Find all object nodes with a points-to path of length one.
-   *
-   * @param node Node for which the points-to analysis will be performed.
-   * @return A set of object nodes that are connected to <code>node</code> with exactly one points-to path.
-   */
+    * Update the escape state of a node by merging the old escape state with the new one.
+    *
+    * @param entry tuple with node and escape state
+    * @return a connection graph with the updated escape state.
+    */
+  def updateEscapeState(entry: (Node, EscapeState)): ConnectionGraph = {
+    val (node, escapeState) = entry
+    updateEscapeStates(Set(node), escapeState)
+  }
+
+  def updateEscapeStates(entries: (Set[_ <: Node], EscapeState)): ConnectionGraph = {
+    val (nodes: Set[Node], escapeState) = entries
+    val states = for {
+      node <- nodes
+      es = determineEscapeState(node, escapeState)
+    } yield (node, es)
+    copy(escapeMap = escapeMap ++ states)
+  }
+
+  private def determineEscapeState(node: Node, escapeState: EscapeState): EscapeState = {
+    escapeMap.get(node).fold(escapeState)(_ merge escapeState)
+  }
+
+  /**
+    * Find all object nodes with a points-to path of length one.
+    *
+    * @param node Node for which the points-to analysis will be performed.
+    * @return A set of object nodes that are connected to <code>node</code> with exactly one points-to path.
+    */
   def pointsTo(node: ReferenceNode): Set[ObjectNode] = {
 
     @tailrec
@@ -156,18 +180,18 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeSet: Escape
   }
 
   /**
-   * Check if a node is a 'terminal node'.
-   * A node is called a 'terminal node' if it has no outgoing (points-to) edges.
-   *
-   * @param node Node to check.
-   * @return true if node is a terminal node, false otherwise.
-   */
+    * Check if a node is a 'terminal node'.
+    * A node is called a 'terminal node' if it has no outgoing (points-to) edges.
+    *
+    * @param node Node to check.
+    * @return true if node is a terminal node, false otherwise.
+    */
   private def isTerminalNode(node: ReferenceNode) = pointsTo(node).isEmpty
 
-  override def toString: String = s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeSet.mkString("\n\t")}"
+  override def toString: String = s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeMap.mkString("\n\t")}"
 
 }
 
 object ConnectionGraph {
-  def empty(): ConnectionGraph = new ConnectionGraph(Set(), Set(), EscapeSet())
+  def empty(): ConnectionGraph = new ConnectionGraph(Set(), Set(), EscapeMap())
 }

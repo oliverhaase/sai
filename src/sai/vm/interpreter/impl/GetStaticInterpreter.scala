@@ -1,7 +1,6 @@
 package vm.interpreter.impl
 
-import cg.EscapeStates._
-import cg.StaticReferenceNode
+import cg.{GlobalEscape, StaticReferenceNode}
 import org.apache.bcel.generic.{BasicType, GETSTATIC, ReferenceType}
 import sai.vm.{DontCare, Reference}
 import vm.Frame

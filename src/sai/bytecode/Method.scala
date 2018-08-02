@@ -1,7 +1,6 @@
 package sai.bytecode
 
 import bytecode.{BasicBlock, BasicBlocks, ExceptionInfo}
-import cg.EscapeStates._
 import cg._
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
@@ -130,7 +129,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
     val nodes = phantomNodes ++ localNodes
 
-    val cg = ConnectionGraph.apply(nodes, edges, EscapeSet(escapes: _*))
+    val cg = ConnectionGraph.apply(nodes, edges, escapes.toMap)
     val initialFrame = Frame(this).copy(cg = cg, localVars = localVars)
     initialFrame
   }
