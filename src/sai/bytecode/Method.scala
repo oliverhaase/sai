@@ -79,103 +79,43 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
   override def toString: String = name
 
-  private def transferActuals = {
-
-    val actualReferences = inputReferences.collect {
-      case (index, ref@Reference(_, _: ActualReferenceNode)) => index -> ref
-    }
-
-    val phantomReferences = (for {
-      (index, Reference(actualType, actualNode: ActualReferenceNode)) <- actualReferences
-      phantomNode = PhantomReferenceNode(actualNode)
-      phantomReference = Reference(actualType, phantomNode)
-    } yield index -> phantomReference).toMap
-
-    val localReferences = (for {
-      (index, Reference(actualType, actualNode: ActualReferenceNode)) <- actualReferences
-      localNode = LocalReferenceNode(actualNode)
-      localReference = Reference(actualType, localNode)
-    } yield index -> localReference).toMap
-
-    val deferredEdges: Set[Edge] = (for {
-      (Reference(_, localNode: LocalReferenceNode), Reference(_, phantomNode: PhantomReferenceNode)) <- localReferences.values.zip(phantomReferences.values)
-      deferredEdge = DeferredEdge(localNode -> phantomNode)
-    } yield deferredEdge).toSet
-
-    (actualReferences, phantomReferences, localReferences, deferredEdges)
-  }
-
-  private def prepareInitialFrame: Frame = {
-    val (actualReferences, phantomReferences, localReferences, edges) = transferActuals
-    val localVars = LocalVars(maxLocals, inputReferences ++ localReferences)
-
-    val localEscapes = (for {
-      Reference(_, localNode) <- localReferences.values
-    } yield localNode -> NoEscape).toList
-
-    val actualEscapes = (for {
-      Reference(_, actualNode) <- actualReferences.values
-    } yield actualNode -> ArgEscape).toList
-
-    val escapes = localEscapes ++ actualEscapes
-
-    val phantomNodes = (for {
-      Reference(_, phantomNode) <- phantomReferences.values
-    } yield phantomNode).toSet
-
-    val localNodes = (for {
-      Reference(_, localNode) <- localReferences.values
-    } yield localNode).toSet
-
-    val nodes = phantomNodes ++ localNodes
-
-    val cg = ConnectionGraph.apply(nodes, edges, escapes.toMap)
-    val initialFrame = Frame(this).copy(cg = cg, localVars = localVars)
-    initialFrame
-  }
-
   lazy val summary: ConnectionGraph = {
-    val initialFrame = prepareInitialFrame
+    val initialFrame = Frame(this)
 
     val firstBasicBlock = controlFlowGraph.head
+    val worklist = scala.collection.mutable.ListBuffer(firstBasicBlock)
+    val outputFrames = scala.collection.mutable.Map.empty[BasicBlock, Frame]
+    var iterations = 0
+    val threshold = 20
+    var outputFrame: Frame = null
 
-    val basicBlock = firstBasicBlock
-    val inFrame = initialFrame
-    val outFrame = basicBlock.interpret(inFrame)
-    outFrame.cg
+    while (worklist.nonEmpty && iterations < threshold) {
+      iterations += 1
 
-    /*
-      val worklist = scala.collection.mutable.Set[(BasicBlock, Frame)]((firstBasicBlock, initialFrame))
+      val block = worklist.remove(0)
+      val inputFrames = for {
+        predecessor <- block.predecessors
+        frame <- outputFrames.get(predecessor)
+      } yield frame
 
-      val outState = collection.mutable.Map(
-        (for {block <- controlFlowGraph} yield (block, initialFrame)): _*
-      )
-
-      // we use an upper bound in case the out states don't converge (i.e. we never reach a fixed point)
-      val upperBound = 10 * controlFlowGraph.size
-      var iteration = 0
-
-      while (worklist.nonEmpty && iteration < upperBound) {
-        iteration += 1
-
-        val entry @ (basicBlock, frame) = worklist.head
-        worklist -= entry
-
-        val cgBefore = outState(basicBlock).cg
-        val outStates = basicBlock.predecessors.map(outState)
-        val inState = outStates.map(_.cg).fold(ConnectionGraph.empty())(_ merge _)
-        val inFrame = initialFrame.copy(cg = inState)
-        val outFrame = basicBlock.instructions.foldLeft(inFrame)((frame, i) => i.interpret(frame))
-        outState(basicBlock) = outFrame
-        val cgAfter = outFrame.cg
-
-
-        // out state changed => we have to recalculate the out states for each successor
-        if (cgBefore != cgAfter) {
-          worklist ++= basicBlock.successors
-        }
+      val inputFrame = inputFrames match {
+        case Nil => initialFrame
+        case frames => frames.reduce(_ merge _)
       }
-      initialFrame.cg*/
+      outputFrame = block.interpret(inputFrame)
+
+      val cgChanged = outputFrames.get(block).fold(true)(_.cg == outputFrame.cg)
+      if (cgChanged) {
+        outputFrames(block) = outputFrame
+        worklist.prependAll(block.successors)
+      }
+    }
+
+    if (iterations == threshold) {
+      // todo: mark all nodes of this method in cg as global escape
+      ???
+    }
+    outputFrame.cg
   }
 
   def interpret {

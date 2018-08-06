@@ -26,7 +26,7 @@ object LocalVars {
       if (argObjects.contains(index))
         builder(index) = argObjects.getOrElse(index, Null)
       else
-        builder(index) = Null
+        builder(index) = DontCare
 
     new LocalVars(builder.toList)
   }
