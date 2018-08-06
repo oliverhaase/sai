@@ -20,6 +20,7 @@ private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
           .addNodes(localReferenceNode, objectNode)
           .addEdge(localReferenceNode -> objectNode)
           .updateEscapeState(objectNode -> escapeState)
+          .updateEscapeState(localReferenceNode -> NoEscape)
       val objectRef = Reference(referenceType, localReferenceNode)
       val updatedStack = stack.push(objectRef)
       frame.copy(stack = updatedStack, cg = updatedCG)

@@ -2,7 +2,8 @@ package vm.interpreter.impl
 
 import cg.{ReferenceNode, StaticReferenceNode}
 import org.apache.bcel.generic.{PUTSTATIC, ReferenceType}
-import sai.vm.{Null, Reference}
+import sai.vm.Reference
+import sai.vm.Reference.Null
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 import cg.GlobalEscape
