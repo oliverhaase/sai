@@ -12,7 +12,7 @@ case class Frame(method: Method, cpg: ConstantPoolGen, stack: Stack[Slot], local
 object Frame {
   def apply(method: Method): Frame = {
     val localVariables = LocalVars(method.maxLocals, method.inputReferences)
-    Frame(method, method.cpg, Stack[Slot](), localVariables, ConnectionGraph.empty())
+    Frame(method, method.cpg, OpStack(), localVariables, ConnectionGraph.empty())
   }
 }
 

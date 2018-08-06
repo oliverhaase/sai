@@ -2,58 +2,60 @@ package scala
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import sai.util.Stack
+import sai.vm.OpStack
+import sai.vm.DontCare
+import sai.vm.Reference.Null
 
-class StackTest extends FlatSpec with Matchers {
+
+class OpStackTest extends FlatSpec with Matchers {
 
   "A stack" should "have a depth" in {
-    var stack = Stack[Int]()
+    var stack = OpStack()
     stack.depth shouldBe 0
-    stack = stack.push(42)
+    stack = stack.push(DontCare)
     stack.depth shouldBe 1
-    stack = stack.push(98)
+    stack = stack.push(Null)
     stack.depth shouldBe 2
     val emptyStack = stack.pop(2)
     emptyStack.depth shouldBe 0
   }
 
   it should "push values" in {
-    var stack = Stack[Int]()
-    stack = stack.push(5)
-    stack.peek shouldBe 5
-    stack = stack.push(9)
-    stack.peek shouldBe 9
+    var stack = OpStack()
+    stack = stack.push(Null)
+    stack.peek shouldBe Null
+    stack = stack.push(DontCare)
+    stack.peek shouldBe DontCare
   }
 
   it should "pop values" in {
-    var stack = Stack[Int]()
-    stack = stack.push(1).push(2).push(3)
-    stack.pop shouldBe (3, _: Stack[Int])
-    stack.pop(2) shouldBe (List(2, 3), _: Stack[Int])
-    stack.pop(3) shouldBe (List(1, 2, 3), _: Stack[Int])
+    var stack = OpStack()
+    stack = stack.push(Null).push(Null).push(DontCare)
+    stack.pop shouldBe OpStack(Null :: Null :: Nil)
+    stack.pop(3) shouldBe OpStack()
   }
 
   it should "duplicate its top value" in {
-    var stack = Stack[Int]()
-    stack = stack.push(1)
+    var stack = OpStack()
+    stack = stack.push(DontCare)
     stack = stack.dup
     stack.depth shouldBe 2
-    stack.peek shouldBe 1
+    stack.peek shouldBe DontCare
   }
 
   it should "throw an exception if popped is called on an empty stack" in {
-    val stack = Stack[Int]()
+    val stack = OpStack()
     an [Exception] should be thrownBy stack.pop
   }
 
   it should "throw an exception if dup is called on an empty stack" in {
-    val stack = Stack[Int]()
+    val stack = OpStack()
     an [Exception] should be thrownBy stack.dup
   }
 
   it should "throw an exception if popped is called more times than elements exist" in {
-    var stack = Stack[Int]()
-    stack = stack.push(1).push(2).push(3)
+    var stack = OpStack()
+    stack = stack.push(DontCare).push(DontCare).push(DontCare)
     an [Exception] should be thrownBy stack.pop(4)
   }
 
