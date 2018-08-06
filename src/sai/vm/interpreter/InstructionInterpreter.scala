@@ -17,7 +17,6 @@ object InstructionInterpreter {
       case i: org.apache.bcel.generic.DUP => DupInterpreter(i)
       case i: org.apache.bcel.generic.GETFIELD => GetFieldInterpreter(i)
       case i: org.apache.bcel.generic.GETSTATIC => GetStaticInterpreter(i)
-      case i: org.apache.bcel.generic.INVOKESPECIAL => InvokeSpecialInterpreter(i)
       case i: org.apache.bcel.generic.NEW => NewInterpreter(i)
       case i: org.apache.bcel.generic.PUTFIELD => PutFieldInterpreter(i)
       case i: org.apache.bcel.generic.PUTSTATIC => PutStaticInterpreter(i)
