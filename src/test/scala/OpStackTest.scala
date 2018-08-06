@@ -59,4 +59,9 @@ class OpStackTest extends FlatSpec with Matchers {
     an [Exception] should be thrownBy stack.pop(4)
   }
 
+  it should "swap the two top stack values" in {
+    val stack = OpStack(DontCare :: Null :: Nil)
+    stack.swap shouldBe OpStack(Null :: DontCare :: Nil)
+  }
+
 }

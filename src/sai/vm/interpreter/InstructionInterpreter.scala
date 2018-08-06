@@ -20,6 +20,7 @@ object InstructionInterpreter {
       case i: org.apache.bcel.generic.NEW => NewInterpreter(i)
       case i: org.apache.bcel.generic.PUTFIELD => PutFieldInterpreter(i)
       case i: org.apache.bcel.generic.PUTSTATIC => PutStaticInterpreter(i)
+      case i: org.apache.bcel.generic.SWAP => SwapInterpreter(i)
       case i => TrivialTransferFunction(i)
     }
     interpreter
