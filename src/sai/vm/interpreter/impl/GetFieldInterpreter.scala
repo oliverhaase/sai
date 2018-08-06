@@ -12,6 +12,7 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
     case frame@Frame(method, cpg, stack, _, cg) =>
 
       val slot = stack.peek
+      var updatedStack = stack.pop
 
       val frames = for {
         slot <- slot
@@ -23,40 +24,12 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
                 val updatedStack = stack.pop.push(Null)
                 frame.copy(stack = updatedStack)
               case _@Reference(_, q: ReferenceNode) =>
-
-                var updatedCG = cg
-
-                val objectNodes = updatedCG.pointsTo(q) match {
-                  case nodes if nodes.isEmpty =>
-                    val phantomObjectNode = new PhantomObjectNode(Id(method, i))
-                    updatedCG = updatedCG.addNode(phantomObjectNode).updateEscapeState(phantomObjectNode -> ArgEscape)
-                    Set(phantomObjectNode)
-                  case nodes =>
-                    nodes
-                }
-
-                val fieldEdges = for {
-                  objectNode <- objectNodes
-                  fieldNode = FieldReferenceNode(objectNode, i.getFieldName(cpg))
-                } yield FieldEdge(objectNode -> fieldNode)
-
-                val fieldNodes = for {fieldEdge <- fieldEdges} yield fieldEdge.to
-                val referenceNode = LocalReferenceNode(Id(method, i))
-                val deferredEdges = for {fieldNode <- fieldNodes} yield DeferredEdge(referenceNode -> fieldNode)
-
-                val allNodes = fieldNodes ++ Set(referenceNode)
-                val allEdges = fieldEdges ++ deferredEdges
-
-                updatedCG = updatedCG
-                  .addNodes(allNodes)
-                  .addEdges(allEdges)
-                  .updateEscapeStates(allNodes -> NoEscape)
-
-                val updatedStack = stack.pop.push(Reference(refType, referenceNode))
+                val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
+                updatedStack = stack.push(Reference(refType, referenceNode))
                 frame.copy(stack = updatedStack, cg = updatedCG)
             }
           case _ =>
-            val updatedStack = stack.pop.push(DontCare, i.produceStack(cpg))
+            updatedStack = stack.push(DontCare, i.produceStack(cpg))
             frame.copy(stack = updatedStack)
         }
       }
@@ -65,4 +38,42 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
       resultFrame
   }
 
+  private def getFieldReference(q: ReferenceNode, frame: Frame, i: GETFIELD): (ReferenceNode, ConnectionGraph) = {
+    var updatedCG = frame.cg
+
+    val objectNodes = updatedCG.pointsTo(q) match {
+      case nodes if nodes.isEmpty =>
+        val phantomObjectNode = new PhantomObjectNode(Id(frame.method, i))
+        updatedCG =
+          updatedCG
+            .addNode(phantomObjectNode)
+            .updateEscapeState(phantomObjectNode -> ArgEscape)
+        Set(phantomObjectNode)
+      case nodes =>
+        nodes
+    }
+
+    val fieldEdges = for {
+      objectNode <- objectNodes
+      fieldNode = FieldReferenceNode(objectNode, i.getFieldName(frame.cpg))
+    } yield FieldEdge(objectNode -> fieldNode)
+
+    val fieldNodes = for {
+      fieldEdge <- fieldEdges
+    } yield fieldEdge.to
+
+    val referenceNode = LocalReferenceNode(Id(frame.method, i))
+    val deferredEdges = for {
+      fieldNode <- fieldNodes
+    } yield DeferredEdge(referenceNode -> fieldNode)
+
+    val allNodes = fieldNodes ++ Set(referenceNode)
+
+    updatedCG = updatedCG
+      .addNodes(allNodes)
+      .addEdges(fieldEdges ++ deferredEdges)
+      .updateEscapeStates(allNodes -> NoEscape)
+
+    (referenceNode, updatedCG)
+  }
 }

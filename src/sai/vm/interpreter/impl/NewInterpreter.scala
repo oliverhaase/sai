@@ -8,6 +8,7 @@ import vm.interpreter.InstructionInterpreter
 import vm.interpreter.Id
 
 private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
+
   override def apply(i: NEW): Frame => Frame = {
     case frame@Frame(method, cpg, stack, _, cg) =>
       val id = Id(method, i)
@@ -16,7 +17,7 @@ private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
       val referenceType = i.getLoadClassType(cpg)
       val escapeState = determineEscapeState(referenceType)
       val updatedCG =
-          cg
+        cg
           .addNodes(localReferenceNode, objectNode)
           .addEdge(localReferenceNode -> objectNode)
           .updateEscapeState(objectNode -> escapeState)
@@ -32,4 +33,5 @@ private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
       case _ => NoEscape
     }
   }
+
 }

@@ -7,10 +7,10 @@ import scala.collection.immutable.Set
 
 sealed trait Slot {
 
-  def merge(other: Slot): Slot =  other match {
-      case slot if this == slot => this
-      case slot: MultivalueSlot => slot.merge(this)
-      case _ => MultivalueSlot(Set(this, other))
+  def merge(other: Slot): Slot = other match {
+    case slot if this == slot => this
+    case slot: MultivalueSlot => slot.merge(this)
+    case _ => MultivalueSlot(Set(this, other))
   }
 
   def map[B](fun: Slot => B): Set[B] = Set(fun(this))
@@ -39,11 +39,8 @@ case class MultivalueSlot(slots: Set[Slot]) extends Slot {
   override def map[B](fun: Slot => B): Set[B] = slots.map(fun)
 
   override def merge(other: Slot): Slot = {
-    val otherSlots = for {
-      slot <- other
-    } yield slot
+    val otherSlots = other.map(identity)
     val flattened = flatten(this.slots ++ otherSlots, Set.empty[Slot])
-    flattened.foreach(s => assert(!s.isInstanceOf[MultivalueSlot]))
     MultivalueSlot(flattened)
   }
 
@@ -58,5 +55,6 @@ case class MultivalueSlot(slots: Set[Slot]) extends Slot {
 
 object MultivalueSlot {
   def apply(slot: Slot*): Slot = slot.reduce(_ merge _)
+
   def apply(): Slot = MultivalueSlot(Set.empty[Slot])
 }

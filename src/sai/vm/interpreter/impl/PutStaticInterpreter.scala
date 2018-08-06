@@ -9,11 +9,11 @@ import vm.interpreter.InstructionInterpreter
 import cg.GlobalEscape
 
 private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[PUTSTATIC] {
+
   override def apply(i: PUTSTATIC): Frame => Frame = {
-    case frame @ Frame(_, cpg, stack, _, cg) =>
-      var updatedStack = stack
+    case frame@Frame(_, cpg, stack, _, cg) =>
       val value = stack.peek
-      updatedStack = updatedStack.pop
+      val updatedStack = stack.pop
       i.getReferenceType(cpg) match {
         case referenceType: ReferenceType =>
           value match {
@@ -22,9 +22,9 @@ private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[
             case Reference(_, q: ReferenceNode) =>
               val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
               val updatedCG = cg
-                  .addNode(staticReferenceNode)
-                  .addEdge(staticReferenceNode -> q)
-                  .updateEscapeState(staticReferenceNode -> GlobalEscape)
+                .addNode(staticReferenceNode)
+                .addEdge(staticReferenceNode -> q)
+                .updateEscapeState(staticReferenceNode -> GlobalEscape)
               frame.copy(stack = updatedStack, cg = updatedCG)
           }
         case _ =>

@@ -7,6 +7,7 @@ import vm.Frame
 import vm.interpreter.InstructionInterpreter
 
 private[interpreter] object GetStaticInterpreter extends InstructionInterpreter[GETSTATIC] {
+  
   override def apply(i: GETSTATIC): Frame => Frame = {
     case frame@Frame(_, cpg, stack, _, cg) =>
       i.getFieldType(cpg) match {

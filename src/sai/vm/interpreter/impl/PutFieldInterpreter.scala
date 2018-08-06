@@ -9,24 +9,24 @@ import vm.interpreter.{Id, InstructionInterpreter}
 import cg.NoEscape
 
 private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[PUTFIELD] {
+
   override def apply(i: PUTFIELD): Frame => Frame = {
     case frame@Frame(_, cpg, stack, _, _) =>
 
       val (valueSlot, referenceSlot, updatedStack) = pop2(stack)
 
       val frames = for {
-        value <- valueSlot
         reference <- referenceSlot
+        value <- valueSlot
       } yield {
         i.getFieldType(cpg) match {
           case _: ReferenceType =>
-            (value, reference) match {
+            (reference, value) match {
               case (_, Null) =>
                 frame.copy(stack = updatedStack)
               case (Null, _) =>
-                // assigning a null value has no influence on the CG
                 frame.copy(stack = updatedStack)
-              case (_@Reference(_, q: ReferenceNode), _@Reference(_, p: ReferenceNode)) =>
+              case (_@Reference(_, p: ReferenceNode), _@Reference(_, q: ReferenceNode)) =>
                 // we have an assignment in form of p.f = q
                 val updatedCG = assignValueToReference(frame, i, p, q)
                 frame.copy(stack = updatedStack, cg = updatedCG)
@@ -36,8 +36,8 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
         }
       }
 
-      val resultFrame = frames.reduce(_ merge _)
-      resultFrame
+      val outFrame = frames.reduce(_ merge _)
+      outFrame
   }
 
   private def pop2(stack: OpStack): (Slot, Slot, OpStack) = {
@@ -55,7 +55,10 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
     val objectNodes = updatedCG.pointsTo(p) match {
       case nodes if nodes.isEmpty =>
         val phantomObjectNode = new PhantomObjectNode(Id(frame.method, i))
-        updatedCG = updatedCG.addNode(phantomObjectNode).updateEscapeState(phantomObjectNode -> ArgEscape)
+        updatedCG =
+          updatedCG
+            .addNode(phantomObjectNode)
+            .updateEscapeState(phantomObjectNode -> ArgEscape)
         Set(phantomObjectNode)
       case nodes =>
         nodes
@@ -66,14 +69,19 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
       fieldNode = FieldReferenceNode(objectNode, i.getFieldName(frame.cpg))
     } yield FieldEdge(objectNode -> fieldNode)
 
-    val fieldNodes = for {fieldEdge <- fieldEdges} yield fieldEdge.to
-    val deferredEdges = for {fieldNode <- fieldNodes} yield DeferredEdge(fieldNode -> q)
-    val allEdges = fieldEdges ++ deferredEdges
+    val fieldNodes = for {
+      fieldEdge <- fieldEdges
+    } yield fieldEdge.to
 
-    updatedCG = updatedCG
-      .addNodes(fieldNodes)
-      .addEdges(allEdges)
-      .updateEscapeStates(fieldNodes -> NoEscape)
+    val deferredEdges = for {
+      fieldNode <- fieldNodes
+    } yield DeferredEdge(fieldNode -> q)
+
+    updatedCG =
+      updatedCG
+        .addNodes(fieldNodes)
+        .addEdges(fieldEdges ++ deferredEdges)
+        .updateEscapeStates(fieldNodes -> NoEscape)
     updatedCG
   }
 
