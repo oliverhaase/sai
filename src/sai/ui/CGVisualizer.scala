@@ -37,7 +37,18 @@ object CGVisualizer {
     case _: FieldEdge => "F"
   }
 
-  private def nodeText(node: Node) = node.id
+  private def nodeText(node: Node) = {
+    val position = node.id.substring(node.id.lastIndexOf(",") + 1)
+    val prefix = node match {
+      case _: Phantom => "P"
+      case _: ObjectNode => "O"
+      case _: LocalReferenceNode => "L"
+      case _: FieldReferenceNode => "F"
+      case _: StaticReferenceNode => "S"
+      case _: ActualReferenceNode => "A"
+    }
+    s"$prefix/$position"
+  }
 
   private def nodeStyle(node: Node) = node match {
     case _: Phantom => "fill-color: gray;"
