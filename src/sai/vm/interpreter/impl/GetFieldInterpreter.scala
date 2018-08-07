@@ -9,7 +9,7 @@ import vm.interpreter.{Id, InstructionInterpreter}
 
 private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[GETFIELD] {
   override def apply(i: GETFIELD): Frame => Frame = {
-    case frame@Frame(method, cpg, stack, _, cg) =>
+    case frame@Frame(_, cpg, stack, _, _) =>
 
       val slot = stack.peek
       var updatedStack = stack.pop
@@ -21,15 +21,15 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
           case refType: ReferenceType =>
             slot match {
               case Null =>
-                val updatedStack = stack.pop.push(Null)
+                updatedStack = updatedStack.push(Null)
                 frame.copy(stack = updatedStack)
               case _@Reference(_, q: ReferenceNode) =>
                 val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
-                updatedStack = stack.push(Reference(refType, referenceNode))
+                updatedStack = updatedStack.push(Reference(refType, referenceNode))
                 frame.copy(stack = updatedStack, cg = updatedCG)
             }
           case _ =>
-            updatedStack = stack.push(DontCare, i.produceStack(cpg))
+            updatedStack = updatedStack.push(DontCare)
             frame.copy(stack = updatedStack)
         }
       }
