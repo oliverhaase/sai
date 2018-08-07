@@ -14,6 +14,7 @@ object InstructionInterpreter {
       case i: org.apache.bcel.generic.ACONST_NULL => AconstNullInterpreter(i)
       case i: org.apache.bcel.generic.ALOAD => AloadInterpreter(i)
       case i: org.apache.bcel.generic.ASTORE => AstoreInterpreter(i)
+      case i: org.apache.bcel.generic.ATHROW => AthrowInterpreter(i)
       case i: org.apache.bcel.generic.DUP => DupInterpreter(i)
       case i: org.apache.bcel.generic.GETFIELD => GetFieldInterpreter(i)
       case i: org.apache.bcel.generic.GETSTATIC => GetStaticInterpreter(i)
