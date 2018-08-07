@@ -27,8 +27,8 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
 
     (for {
       n3 <- N3
-      n1 = N1.find(n1 => n1.id == n3.id)
-      n2 = N2.find(n2 => n2.id == n3.id)
+      n1 = N1.find(n1 => n1 == n3)
+      n2 = N2.find(n2 => n2 == n3)
       n3es = (n1, n2) match {
         case (Some(node1), Some(node2)) =>
           this.escapeMap(node1).merge(other.escapeMap(node2))
@@ -113,17 +113,15 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
       case edge@DeferredEdge(`p`, _) => edge
     }
 
-    val bypassedPointsToEdges =
-      for {
-        in <- ingoingDeferredEdges
-        out <- outgoingPointsToEdges
-      } yield PointsToEdge(in.from -> out.to)
+    val bypassedPointsToEdges = for {
+      in <- ingoingDeferredEdges
+      out <- outgoingPointsToEdges
+    } yield PointsToEdge(in.from -> out.to)
 
-    val bypassedDeferredEdges =
-      for {
-        in <- ingoingDeferredEdges
-        out <- outgoingDeferredEdges
-      } yield DeferredEdge(in.from -> out.to)
+    val bypassedDeferredEdges = for {
+      in <- ingoingDeferredEdges
+      out <- outgoingDeferredEdges
+    } yield DeferredEdge(in.from -> out.to)
 
     val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
     val edgesToAdd = bypassedPointsToEdges ++ bypassedDeferredEdges
