@@ -15,7 +15,7 @@ object CGVisualizer {
       val id = node.toString
       if (graph.getNode[SingleNode](id) == null) {
         val singleNode: SingleNode = graph.addNode(id)
-        singleNode.setAttribute("ui.label", nodeText(node))
+        singleNode.setAttribute("ui.label", nodeText(node) + connectionGraph.escapeMap(node))
         singleNode.setAttribute("ui.style", nodeStyle(node))
       }
     }

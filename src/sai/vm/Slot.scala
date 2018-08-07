@@ -27,10 +27,6 @@ object Reference {
   val Null = Reference(null, null)
 }
 
-case class ParameterObject(referenceType: org.apache.bcel.generic.Type) extends Slot {
-  override def toString: String = s"$referenceType/param"
-}
-
 case object DontCare extends Slot {
 }
 
