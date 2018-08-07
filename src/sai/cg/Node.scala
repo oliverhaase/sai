@@ -35,8 +35,7 @@ object StaticReferenceNode {
 
 sealed trait Phantom
 class PhantomObjectNode(override val id: String) extends ObjectNode(id) with Phantom
-class PhantomReferenceNode(override val id: String) extends ReferenceNode with Phantom
 
-object PhantomReferenceNode {
-  def apply(actualReferenceNode: ActualReferenceNode) = new PhantomReferenceNode(actualReferenceNode.id)
+object PhantomObjectNode {
+  def apply(actualReferenceNode: ActualReferenceNode) = new PhantomObjectNode(actualReferenceNode.id)
 }

@@ -1,6 +1,6 @@
 package vm
 
-import cg._
+import cg.{PhantomObjectNode, _}
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import sai.vm.{LocalVars, OpStack, Reference}
@@ -28,7 +28,7 @@ object Frame {
     // create phantom nodes for actuals
     val phantomNodes = for {
       (_, Reference(_, actual: ActualReferenceNode)) <- actuals
-      phantom = PhantomReferenceNode(actual)
+      phantom = PhantomObjectNode(actual)
     } yield phantom
 
     val phantomEscapes = for {
@@ -51,8 +51,8 @@ object Frame {
 
     // link local nodes with phantom nodes
     val edges = for {
-      (localNode: LocalReferenceNode, phantomNode: PhantomReferenceNode) <- localNodes.zip(phantomNodes)
-      edge = DeferredEdge(localNode -> phantomNode)
+      (localNode: LocalReferenceNode, phantomNode: PhantomObjectNode) <- localNodes.zip(phantomNodes)
+      edge = PointsToEdge(localNode -> phantomNode)
     } yield edge
 
     val localVars = LocalVars(method.maxLocals, localReferences)
