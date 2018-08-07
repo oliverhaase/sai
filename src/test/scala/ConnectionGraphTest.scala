@@ -8,13 +8,13 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
 
   "A Connection Graph" should "find the points-to objects" in {
     /**
-     * Example structure for test:
-     * T a = new T("S1");
-     * T b = a;
-     * b = new T("S2");
-     * T c = b;
-     * T d = null;
-     */
+      * Example structure for test:
+      * T a = new T("S1");
+      * T b = a;
+      * b = new T("S2");
+      * T c = b;
+      * T d = null;
+      */
     val a = LocalReferenceNode("a")
     val b = LocalReferenceNode("b")
     val c = StaticReferenceNode("c")
@@ -92,6 +92,37 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
       PointsToEdge(sK -> o1),
       PointsToEdge(sK -> oN)
     )
+  }
+
+  it should "update the escape state of a node" in {
+    val objectNode = ObjectNode("O")
+    var cg = ConnectionGraph.empty().addNode(objectNode)
+    cg.escapeMap shouldBe empty
+
+    cg = cg.updateEscapeState(objectNode -> NoEscape)
+    cg.escapeMap should contain(objectNode -> NoEscape)
+
+    cg = cg.updateEscapeState(objectNode -> GlobalEscape)
+    cg.escapeMap should contain(objectNode -> GlobalEscape)
+
+    cg = cg.updateEscapeState(objectNode -> ArgEscape)
+    cg.escapeMap should contain(objectNode -> GlobalEscape)
+  }
+
+  it should "create a bottom solution" in {
+    val locals: Set[Node] = Set(LocalReferenceNode("L1"), LocalReferenceNode("L2"))
+    val objects: Set[Node] = Set(ObjectNode("O1"), ObjectNode("O2"))
+    val statics: Set[Node] = Set(StaticReferenceNode("S1"), StaticReferenceNode("S2"))
+
+    val cg =
+      ConnectionGraph.empty()
+        .addNodes(locals.union(objects).union(statics))
+        .updateEscapeStates(locals -> NoEscape)
+        .updateEscapeStates(objects -> ArgEscape)
+        .updateEscapeStates(statics -> GlobalEscape)
+
+    cg.escapeMap.values.toSet shouldBe Set(NoEscape, ArgEscape, GlobalEscape)
+    cg.bottomSolution.escapeMap.values.toSet shouldBe Set(GlobalEscape)
   }
 
 }

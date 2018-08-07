@@ -104,18 +104,18 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       }
       outputFrame = block.interpret(inputFrame)
 
-      val cgChanged = outputFrames.get(block).fold(true)(_.cg == outputFrame.cg)
+      val cgChanged = outputFrames.get(block).fold(true)(_.cg != outputFrame.cg)
       if (cgChanged) {
         outputFrames(block) = outputFrame
-        worklist.prependAll(block.successors)
+        worklist.appendAll(block.successors)
       }
     }
 
     if (iterations == threshold) {
-      // todo: mark all nodes of this method in cg as global escape
-      ???
+      outputFrame.cg.bottomSolution
+    } else {
+      outputFrame.cg
     }
-    outputFrame.cg
   }
 
   def interpret {

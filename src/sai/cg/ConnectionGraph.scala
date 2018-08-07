@@ -180,6 +180,18 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
   }
 
   /**
+    * Mark all nodes as GlobalEscape.
+    *
+    * @return A new connection graph with all nodes marked as GlobalEscape.
+    */
+  def bottomSolution: ConnectionGraph = {
+    val bottomSolution = for {
+      (node, _) <- escapeMap
+    } yield node -> GlobalEscape
+    copy(escapeMap = bottomSolution)
+  }
+
+  /**
     * Check if a node is a 'terminal node'.
     * A node is called a 'terminal node' if it has no outgoing (points-to) edges.
     *
