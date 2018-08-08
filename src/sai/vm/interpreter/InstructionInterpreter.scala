@@ -1,6 +1,8 @@
 package vm.interpreter
 
+import sai.bytecode.instruction.Instruction
 import vm.Frame
+import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.impl._
 
 private[interpreter] trait InstructionInterpreter[I] {
@@ -9,22 +11,30 @@ private[interpreter] trait InstructionInterpreter[I] {
 
 object InstructionInterpreter {
 
-  def apply(instruction: org.apache.bcel.generic.Instruction): Frame => Frame = {
-    val interpreter = instruction match {
   type Interpreter = Frame => Frame
-      case i: org.apache.bcel.generic.ACONST_NULL => AconstNullInterpreter(i)
-      case i: org.apache.bcel.generic.ALOAD => AloadInterpreter(i)
-      case i: org.apache.bcel.generic.ASTORE => AstoreInterpreter(i)
-      case i: org.apache.bcel.generic.ATHROW => AthrowInterpreter(i)
-      case i: org.apache.bcel.generic.DUP => DupInterpreter(i)
-      case i: org.apache.bcel.generic.GETFIELD => GetFieldInterpreter(i)
-      case i: org.apache.bcel.generic.GETSTATIC => GetStaticInterpreter(i)
-      case i: org.apache.bcel.generic.NEW => NewInterpreter(i)
-      case i: org.apache.bcel.generic.PUTFIELD => PutFieldInterpreter(i)
-      case i: org.apache.bcel.generic.PUTSTATIC => PutStaticInterpreter(i)
-      case i: org.apache.bcel.generic.SWAP => SwapInterpreter(i)
-      case i => TrivialTransferFunction(i)
+
+  def apply(instruction: Instruction): Interpreter = {
+    val interpreter = lookupInterpreter(instruction.bcelInstruction.getInstruction)
+    if (instruction.isExceptionTarget) {
+      interpreter :: RaisePhantomExceptionDecorator(instruction)
+    } else {
+      interpreter
     }
-    interpreter
   }
+
+  private def lookupInterpreter(instruction: org.apache.bcel.generic.Instruction): Interpreter = instruction match {
+    case i: org.apache.bcel.generic.ACONST_NULL => AconstNullInterpreter(i)
+    case i: org.apache.bcel.generic.ALOAD => AloadInterpreter(i)
+    case i: org.apache.bcel.generic.ASTORE => AstoreInterpreter(i)
+    case i: org.apache.bcel.generic.ATHROW => AthrowInterpreter(i)
+    case i: org.apache.bcel.generic.DUP => DupInterpreter(i)
+    case i: org.apache.bcel.generic.GETFIELD => GetFieldInterpreter(i)
+    case i: org.apache.bcel.generic.GETSTATIC => GetStaticInterpreter(i)
+    case i: org.apache.bcel.generic.NEW => NewInterpreter(i)
+    case i: org.apache.bcel.generic.PUTFIELD => PutFieldInterpreter(i)
+    case i: org.apache.bcel.generic.PUTSTATIC => PutStaticInterpreter(i)
+    case i: org.apache.bcel.generic.SWAP => SwapInterpreter(i)
+    case i => TrivialTransferFunction(i)
+  }
+
 }
