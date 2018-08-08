@@ -80,27 +80,36 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-    val initialFrame = Frame(this)
 
-    val firstBasicBlock = controlFlowGraph.head
-    val worklist = scala.collection.mutable.ListBuffer(firstBasicBlock)
+    // Summary calculation starts with the first basic block in the control flow graph.
+    val entryBlock = controlFlowGraph.head
+    val worklist = scala.collection.mutable.ListBuffer(entryBlock)
+
+    // We store the frame of each interpreted basic block.
     val outputFrames = scala.collection.mutable.Map.empty[BasicBlock, Frame]
-    var iterations = 0
-    val threshold = 20
+
+    // A basic block is interpreted a maximum of 'threshold' times.
+    // The algorithm terminates prematurely if the limit of one block is reached.
+    val iterations = scala.collection.mutable.Map.empty[BasicBlock, Int]
+    val threshold = 10
+    var reachedThreshold = false
+
     var outputFrame: Frame = null
 
-    while (worklist.nonEmpty && iterations < threshold) {
-      iterations += 1
-
+    while (worklist.nonEmpty && !reachedThreshold) {
       val block = worklist.remove(0)
+
       val inputFrames = for {
         predecessor <- block.predecessors
         frame <- outputFrames.get(predecessor)
       } yield frame
 
       val inputFrame = inputFrames match {
-        case Nil => initialFrame
-        case frames => frames.reduce(_ merge _)
+        case Nil =>
+          val initialFrame = Frame(this)
+          initialFrame
+        case frames =>
+          frames.reduce(_ merge _)
       }
       outputFrame = block.interpret(inputFrame)
 
@@ -109,9 +118,11 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         outputFrames(block) = outputFrame
         worklist.appendAll(block.successors)
       }
+      iterations(block) = iterations.getOrElse(block, 0) + 1
+      reachedThreshold = iterations(block) == threshold
     }
 
-    if (iterations == threshold) {
+    if (reachedThreshold) {
       outputFrame.cg.bottomSolution
     } else {
       outputFrame.cg
