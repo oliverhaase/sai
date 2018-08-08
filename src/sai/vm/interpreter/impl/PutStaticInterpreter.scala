@@ -20,7 +20,7 @@ private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[
           value match {
             case Null =>
               frame.copy(stack = updatedStack)
-            case Reference(_, q: ReferenceNode) =>
+            case Reference(_, q) =>
               val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
               val updatedCG = cg
                 .addNode(staticReferenceNode)

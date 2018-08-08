@@ -1,6 +1,6 @@
 package sai.vm
 
-import cg.Node
+import cg.ReferenceNode
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Set
@@ -19,7 +19,7 @@ sealed trait Slot {
 
 }
 
-case class Reference(referenceType: org.apache.bcel.generic.Type, node: Node) extends Slot {
+case class Reference(referenceType: org.apache.bcel.generic.Type, node: ReferenceNode) extends Slot {
   override def toString: String = s"$referenceType/$node"
 }
 

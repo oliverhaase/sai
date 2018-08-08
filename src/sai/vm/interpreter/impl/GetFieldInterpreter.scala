@@ -25,7 +25,7 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
               case Null =>
                 updatedStack = updatedStack.push(Null)
                 frame.copy(stack = updatedStack)
-              case _@Reference(_, q: ReferenceNode) =>
+              case _@Reference(_, q) =>
                 val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
                 updatedStack = updatedStack.push(Reference(refType, referenceNode))
                 frame.copy(stack = updatedStack, cg = updatedCG)

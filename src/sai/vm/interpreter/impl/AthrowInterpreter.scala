@@ -21,12 +21,17 @@ private[interpreter] object AthrowInterpreter extends InstructionInterpreter[ATH
           // If objectref is null, athrow throws a NullPointerException instead of objectref.
           // see JVMS-8 p. 378
           val objectNode = ObjectNode(Id(m, i))
-          val updatedCG = cg.addNode(objectNode).updateEscapeState(objectNode -> GlobalEscape)
+          val referenceNode = LocalReferenceNode(Id(m, i))
+          val updatedCG =
+            cg.addNodes(referenceNode, objectNode)
+              .addEdge(referenceNode -> objectNode)
+              .updateEscapeState(referenceNode -> NoEscape)
+              .updateEscapeState(objectNode -> GlobalEscape)
           val referenceType = Type.getType(classOf[NullPointerException]).asInstanceOf[ReferenceType]
-          val reference = Reference(referenceType, objectNode)
+          val reference = Reference(referenceType, referenceNode)
           val updatedStack = OpStack(reference :: Nil)
           frame.copy(cg = updatedCG, stack = updatedStack)
-        case _@Reference(_, node: ReferenceNode) =>
+        case _@Reference(_, node) =>
           val objects = cg.pointsTo(node)
           val updatedCG = cg.updateEscapeStates(objects -> GlobalEscape)
           val updatedStack = OpStack(slot :: Nil)

@@ -27,7 +27,7 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
                 frame.copy(stack = updatedStack)
               case (Null, _) =>
                 frame.copy(stack = updatedStack)
-              case (_@Reference(_, p: ReferenceNode), _@Reference(_, q: ReferenceNode)) =>
+              case (_@Reference(_, p), _@Reference(_, q)) =>
                 // we have an assignment in form of p.f = q
                 val updatedCG = assignValueToReference(frame, i, p, q)
                 frame.copy(stack = updatedStack, cg = updatedCG)
