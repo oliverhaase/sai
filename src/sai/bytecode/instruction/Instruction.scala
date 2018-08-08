@@ -90,6 +90,10 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   }
 
   override def compare(that: Instruction): Int = Ordering[Option[Int]].compare(pc, that.pc)
+
+  def isExceptionTarget = method.exceptionInfo.isExceptionTarget(this)
+
+  def getTargetExceptionType = method.exceptionInfo.getTargetExceptionType(this)
 }
 
 object Instruction {
