@@ -1,8 +1,7 @@
 package scala
 
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 import sai.bytecode.Clazz
 
 class BasicBlockTest extends FlatSpec with Matchers {

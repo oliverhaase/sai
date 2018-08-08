@@ -1,7 +1,6 @@
 package scala
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
+import org.scalatest.{FlatSpec, Matchers}
 import sai.bytecode.Clazz
 
 class ExceptionInfoTest extends FlatSpec with Matchers {

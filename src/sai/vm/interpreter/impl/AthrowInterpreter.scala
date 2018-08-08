@@ -1,10 +1,10 @@
 package vm.interpreter.impl
 
-import cg.{GlobalEscape, ObjectNode, ReferenceNode}
+import cg._
 import org.apache.bcel.generic.{ATHROW, ReferenceType, Type}
+import sai.vm.Reference.Null
 import sai.vm.{OpStack, Reference}
 import vm.Frame
-import sai.vm.Reference.Null
 import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
 

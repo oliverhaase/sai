@@ -1,8 +1,7 @@
 package scala
 
 import cg._
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
+import org.scalatest.{FlatSpec, Matchers}
 
 class ConnectionGraphTest extends FlatSpec with Matchers {
 

@@ -1,9 +1,9 @@
 package cg
 
+import cg.EscapeMap.EscapeMap
+
 import scala.annotation.tailrec
 import scala.collection.immutable.Set
-
-import cg.EscapeMap.EscapeMap
 
 case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: EscapeMap) {
 

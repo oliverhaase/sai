@@ -1,13 +1,12 @@
 package vm.interpreter.impl
 
-import cg._
+import cg.{NoEscape, _}
 import org.apache.bcel.generic.{PUTFIELD, ReferenceType}
-import sai.vm.{OpStack, Reference, Slot}
 import sai.vm.Reference.Null
+import sai.vm.{OpStack, Reference, Slot}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
-import cg.NoEscape
 
 private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[PUTFIELD] {
 

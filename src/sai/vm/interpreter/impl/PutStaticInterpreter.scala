@@ -1,12 +1,11 @@
 package vm.interpreter.impl
 
-import cg.{ReferenceNode, StaticReferenceNode}
+import cg.{GlobalEscape, ReferenceNode, StaticReferenceNode}
 import org.apache.bcel.generic.{PUTSTATIC, ReferenceType}
 import sai.vm.Reference
 import sai.vm.Reference.Null
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
-import cg.GlobalEscape
 import vm.interpreter.InstructionInterpreter.Interpreter
 
 private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[PUTSTATIC] {

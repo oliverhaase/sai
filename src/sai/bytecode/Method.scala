@@ -4,7 +4,7 @@ import bytecode.{BasicBlock, BasicBlocks, ExceptionInfo}
 import cg._
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
-import sai.vm.{LocalVars, Reference}
+import sai.vm.Reference
 import vm.Frame
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {

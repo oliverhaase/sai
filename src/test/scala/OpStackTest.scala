@@ -1,9 +1,7 @@
 package scala
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
-import sai.vm.OpStack
-import sai.vm.DontCare
+import org.scalatest.{FlatSpec, Matchers}
+import sai.vm.{DontCare, OpStack}
 import sai.vm.Reference.Null
 
 

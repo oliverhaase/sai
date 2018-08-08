@@ -1,9 +1,7 @@
 package ui
 
 import cg._
-import org.graphstream.graph.implementations.SingleGraph
-import org.graphstream.graph.implementations.SingleNode
-import org.graphstream.graph.implementations.AbstractEdge
+import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
 
 object CGVisualizer {
 
