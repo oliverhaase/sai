@@ -5,11 +5,12 @@ import org.apache.bcel.generic.{ATHROW, ReferenceType, Type}
 import sai.vm.{OpStack, Reference}
 import vm.Frame
 import sai.vm.Reference.Null
+import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
 
 private[interpreter] object AthrowInterpreter extends InstructionInterpreter[ATHROW] {
 
-  override def apply(i: ATHROW): Frame => Frame = {
+  override def apply(i: ATHROW): Interpreter = {
     case frame@Frame(m, _, stack, _, cg) =>
       val slot = stack.peek
 

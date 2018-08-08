@@ -4,13 +4,14 @@ import vm.Frame
 import vm.interpreter.impl._
 
 private[interpreter] trait InstructionInterpreter[I] {
-  def apply(i: I): Frame => Frame
+  def apply(i: I): Interpreter
 }
 
 object InstructionInterpreter {
 
   def apply(instruction: org.apache.bcel.generic.Instruction): Frame => Frame = {
     val interpreter = instruction match {
+  type Interpreter = Frame => Frame
       case i: org.apache.bcel.generic.ACONST_NULL => AconstNullInterpreter(i)
       case i: org.apache.bcel.generic.ALOAD => AloadInterpreter(i)
       case i: org.apache.bcel.generic.ASTORE => AstoreInterpreter(i)

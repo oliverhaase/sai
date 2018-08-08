@@ -7,10 +7,11 @@ import sai.vm.Reference.Null
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 import cg.GlobalEscape
+import vm.interpreter.InstructionInterpreter.Interpreter
 
 private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[PUTSTATIC] {
 
-  override def apply(i: PUTSTATIC): Frame => Frame = {
+  override def apply(i: PUTSTATIC): Interpreter = {
     case frame@Frame(_, cpg, stack, _, cg) =>
       val value = stack.peek
       val updatedStack = stack.pop

@@ -5,10 +5,11 @@ import org.apache.bcel.generic.{BasicType, GETSTATIC, ReferenceType}
 import sai.vm.{DontCare, Reference}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
+import vm.interpreter.InstructionInterpreter.Interpreter
 
 private[interpreter] object GetStaticInterpreter extends InstructionInterpreter[GETSTATIC] {
   
-  override def apply(i: GETSTATIC): Frame => Frame = {
+  override def apply(i: GETSTATIC): Interpreter = {
     case frame@Frame(_, cpg, stack, _, cg) =>
       i.getFieldType(cpg) match {
         case referenceType: ReferenceType =>

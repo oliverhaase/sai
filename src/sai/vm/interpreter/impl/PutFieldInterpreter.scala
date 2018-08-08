@@ -5,12 +5,13 @@ import org.apache.bcel.generic.{PUTFIELD, ReferenceType}
 import sai.vm.{OpStack, Reference, Slot}
 import sai.vm.Reference.Null
 import vm.Frame
+import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
 import cg.NoEscape
 
 private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[PUTFIELD] {
 
-  override def apply(i: PUTFIELD): Frame => Frame = {
+  override def apply(i: PUTFIELD): Interpreter = {
     case frame@Frame(_, cpg, stack, _, _) =>
 
       val (valueSlot, referenceSlot, updatedStack) = pop2(stack)

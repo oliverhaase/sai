@@ -5,10 +5,12 @@ import org.apache.bcel.generic.{GETFIELD, ReferenceType}
 import sai.vm.Reference.Null
 import sai.vm.{DontCare, Reference}
 import vm.Frame
+import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
 
 private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[GETFIELD] {
-  override def apply(i: GETFIELD): Frame => Frame = {
+
+  override def apply(i: GETFIELD): Interpreter = {
     case frame@Frame(_, cpg, stack, _, _) =>
 
       val slot = stack.peek

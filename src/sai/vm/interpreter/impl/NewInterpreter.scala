@@ -4,12 +4,12 @@ import cg._
 import org.apache.bcel.generic.{NEW, ObjectType}
 import sai.vm.Reference
 import vm.Frame
-import vm.interpreter.InstructionInterpreter
-import vm.interpreter.Id
+import vm.interpreter.{Id, InstructionInterpreter}
+import vm.interpreter.InstructionInterpreter.Interpreter
 
 private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
 
-  override def apply(i: NEW): Frame => Frame = {
+  override def apply(i: NEW): Interpreter = {
     case frame@Frame(method, cpg, stack, _, cg) =>
       val id = Id(method, i)
       val objectNode = ObjectNode(id)
