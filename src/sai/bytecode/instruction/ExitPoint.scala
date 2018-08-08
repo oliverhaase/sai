@@ -1,6 +1,7 @@
 package sai.bytecode.instruction
 
 import sai.bytecode.Method
+import vm.Frame
 
 class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
@@ -14,6 +15,8 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
   override def successors: List[Instruction] = List()
 
   override def lineNumber: Int = method.lastInstruction.lineNumber
+
+  override def interpret(frame: Frame): Frame = frame
 
   override def compare(that: Instruction): Int = 1
 

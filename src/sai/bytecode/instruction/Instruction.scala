@@ -5,7 +5,7 @@ import sai.bytecode.Method
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 
-class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
+class Instruction(val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
                   val method: Method) extends Ordered[Instruction] {
 
   def id: String = buildId(bcelInstruction.getPosition.toString)
@@ -49,12 +49,9 @@ class Instruction(bcelInstruction: org.apache.bcel.generic.InstructionHandle, cp
   }
 
   def interpret(frame: Frame): Frame = {
-    if (bcelInstruction == null)
-      frame
-    else {
-      val interpreter = InstructionInterpreter(this.bcelInstruction.getInstruction)
-      interpreter(frame)
-    }
+    val interpreter = InstructionInterpreter(this)
+    val resultFrame = interpreter(frame)
+    resultFrame
   }
 
   final def predecessors: List[Instruction] =
