@@ -13,10 +13,7 @@ private[interpreter] object AthrowInterpreter extends InstructionInterpreter[ATH
   override def apply(i: ATHROW): Interpreter = {
     case frame@Frame(m, _, stack, _, cg) =>
       val slot = stack.peek
-
-      val frames = for {
-        slot <- slot
-      } yield slot match {
+      slot match {
         case Null =>
           // If objectref is null, athrow throws a NullPointerException instead of objectref.
           // see JVMS-8 p. 378
@@ -37,6 +34,5 @@ private[interpreter] object AthrowInterpreter extends InstructionInterpreter[ATH
           val updatedStack = OpStack(slot :: Nil)
           frame.copy(cg = updatedCG, stack = updatedStack)
       }
-      frames.reduce(_ merge _)
   }
 }

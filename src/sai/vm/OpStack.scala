@@ -27,13 +27,4 @@ case class OpStack(private val elements: List[Slot] = Nil) {
     case x => pop.pop(x - 1)
   }
 
-  def merge(other: OpStack): OpStack = {
-    assert(this.depth == other.depth)
-    val slots = for {
-      (mySlot, otherSlot) <- elements.zip(other.elements)
-      slot = mySlot.merge(otherSlot)
-    } yield slot
-    OpStack(slots)
-  }
-
 }

@@ -12,32 +12,22 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
 
   override def apply(i: PUTFIELD): Interpreter = {
     case frame@Frame(_, cpg, stack, _, _) =>
-
-      val (valueSlot, referenceSlot, updatedStack) = pop2(stack)
-
-      val frames = for {
-        reference <- referenceSlot
-        value <- valueSlot
-      } yield {
-        i.getFieldType(cpg) match {
-          case _: ReferenceType =>
-            (reference, value) match {
-              case (_, Null) =>
-                frame.copy(stack = updatedStack)
-              case (Null, _) =>
-                frame.copy(stack = updatedStack)
-              case (_@Reference(_, p), _@Reference(_, q)) =>
-                // we have an assignment in form of p.f = q
-                val updatedCG = assignValueToReference(frame, i, p, q)
-                frame.copy(stack = updatedStack, cg = updatedCG)
-            }
-          case _ =>
-            frame.copy(stack = updatedStack)
-        }
+      val (value, reference, updatedStack) = pop2(stack)
+      i.getFieldType(cpg) match {
+        case _: ReferenceType =>
+          (reference, value) match {
+            case (_, Null) =>
+              frame.copy(stack = updatedStack)
+            case (Null, _) =>
+              frame.copy(stack = updatedStack)
+            case (_@Reference(_, p), _@Reference(_, q)) =>
+              // we have an assignment in form of p.f = q
+              val updatedCG = assignValueToReference(frame, i, p, q)
+              frame.copy(stack = updatedStack, cg = updatedCG)
+          }
+        case _ =>
+          frame.copy(stack = updatedStack)
       }
-
-      val outFrame = frames.reduce(_ merge _)
-      outFrame
   }
 
   private def pop2(stack: OpStack): (Slot, Slot, OpStack) = {

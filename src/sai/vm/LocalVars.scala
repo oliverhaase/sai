@@ -8,14 +8,6 @@ case class LocalVars(localVars: List[Slot]) {
 
   def set(index: Int, slot: Slot) = new LocalVars(localVars.updated(index, slot))
 
-  def merge(other: LocalVars): LocalVars = {
-    val slots = for {
-      (mySlot, otherSlot) <- localVars.zipAll(other.localVars, MultivalueSlot(), MultivalueSlot())
-      merged = mySlot.merge(otherSlot)
-    } yield merged
-    LocalVars(slots)
-  }
-
 }
 
 object LocalVars {

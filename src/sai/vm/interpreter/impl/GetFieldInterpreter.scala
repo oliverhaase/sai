@@ -16,28 +16,21 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
       val slot = stack.peek
       var updatedStack = stack.pop
 
-      val frames = for {
-        slot <- slot
-      } yield {
-        i.getFieldType(cpg) match {
-          case refType: ReferenceType =>
-            slot match {
-              case Null =>
-                updatedStack = updatedStack.push(Null)
-                frame.copy(stack = updatedStack)
-              case _@Reference(_, q) =>
-                val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
-                updatedStack = updatedStack.push(Reference(refType, referenceNode))
-                frame.copy(stack = updatedStack, cg = updatedCG)
-            }
-          case _ =>
-            updatedStack = updatedStack.push(DontCare)
-            frame.copy(stack = updatedStack)
-        }
+      i.getFieldType(cpg) match {
+        case refType: ReferenceType =>
+          slot match {
+            case Null =>
+              updatedStack = updatedStack.push(Null)
+              frame.copy(stack = updatedStack)
+            case _@Reference(_, q) =>
+              val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
+              updatedStack = updatedStack.push(Reference(refType, referenceNode))
+              frame.copy(stack = updatedStack, cg = updatedCG)
+          }
+        case _ =>
+          updatedStack = updatedStack.push(DontCare)
+          frame.copy(stack = updatedStack)
       }
-
-      val resultFrame = frames.reduce(_ merge _)
-      resultFrame
   }
 
   private def getFieldReference(q: ReferenceNode, frame: Frame, i: GETFIELD): (ReferenceNode, ConnectionGraph) = {

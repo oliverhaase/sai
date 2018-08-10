@@ -80,13 +80,12 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-
     // Summary calculation starts with the first basic block in the control flow graph.
     val entryBlock = controlFlowGraph.head
     val worklist = scala.collection.mutable.ListBuffer(entryBlock)
 
-    // We store the frame of each interpreted basic block.
-    val outputFrames = scala.collection.mutable.Map.empty[BasicBlock, Frame]
+    // We store all output frames of each interpreted basic block.
+    val resultFrames = scala.collection.mutable.Map.empty[BasicBlock, Set[Frame]]
 
     // A basic block is interpreted a maximum of 'threshold' times.
     // The algorithm terminates prematurely if the limit of one block is reached.
@@ -94,38 +93,45 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     val threshold = 10
     var reachedThreshold = false
 
-    var outputFrame: Frame = null
-
     while (worklist.nonEmpty && !reachedThreshold) {
       val block = worklist.remove(0)
 
-      val inputFrames = for {
+      val predecessorFrames = for {
         predecessor <- block.predecessors
-        frame <- outputFrames.get(predecessor)
-      } yield frame
+        outFrame <- resultFrames.getOrElse(predecessor, Set.empty[Frame])
+      } yield outFrame
 
-      val inputFrame = inputFrames match {
-        case Nil =>
-          val initialFrame = Frame(this)
-          initialFrame
-        case frames =>
-          frames.reduce(_ merge _)
-      }
-      outputFrame = block.interpret(inputFrame)
+      val inputFrames: Set[Frame] =
+        if (predecessorFrames.isEmpty)
+          Set(Frame(this))
+        else
+          predecessorFrames.toSet
 
-      val cgChanged = outputFrames.get(block).fold(true)(_.cg != outputFrame.cg)
-      if (cgChanged) {
-        outputFrames(block) = outputFrame
+      val outputFrames: Set[Frame] = for {
+        inputFrame <- inputFrames
+        outputFrame = block.interpret(inputFrame)
+      } yield outputFrame
+
+      val framesChanged = resultFrames.get(block).fold(true)(_ != outputFrames)
+      if (framesChanged) {
+        resultFrames(block) = outputFrames
         worklist.appendAll(block.successors)
       }
       iterations(block) = iterations.getOrElse(block, 0) + 1
       reachedThreshold = iterations(block) == threshold
     }
 
+    val connectionGraphs = for {
+      frameSet <- resultFrames.values
+      frame <- frameSet
+    } yield frame.cg
+
+    val resultGraph = connectionGraphs.toSet.reduce(_ merge _)
+
     if (reachedThreshold) {
-      outputFrame.cg.bottomSolution
+      resultGraph.bottomSolution
     } else {
-      outputFrame.cg
+      resultGraph
     }
   }
 
