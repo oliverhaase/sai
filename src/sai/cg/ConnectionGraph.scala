@@ -201,7 +201,28 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     } yield edge.to
   }
 
+  private def buildSubgraph(escapeState: EscapeState): ConnectionGraph = {
 
+    val nodes = for {
+      node <- this.nodes if this.escapeMap(node) == escapeState
+    } yield node
+
+    val edges = for {
+      edge <- this.edges if nodes.contains(edge.from) || nodes.contains(edge.to)
+    } yield edge
+
+    val escapeMap = for {
+      (node, es) <- this.escapeMap if es == escapeState
+    } yield (node, es)
+
+    ConnectionGraph(nodes, edges, escapeMap)
+  }
+
+  def nonlocalSubgraph: ConnectionGraph = {
+    val globalEscapeSubgraph = buildSubgraph(GlobalEscape)
+    val argEscapeSubgraph = buildSubgraph(ArgEscape)
+    globalEscapeSubgraph.merge(argEscapeSubgraph)
+  }
 
   /**
     * Check if a node is a 'terminal node'.

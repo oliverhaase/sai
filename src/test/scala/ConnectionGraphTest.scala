@@ -124,4 +124,58 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
     cg.bottomSolution.escapeMap.values.toSet shouldBe Set(GlobalEscape)
   }
 
+  it should "find nodes by escape state" in {
+    val L1 = LocalReferenceNode("L1")
+    val L2 = LocalReferenceNode("L2")
+    val A = ActualReferenceNode("A")
+    val S = StaticReferenceNode("S")
+    val cg =
+      ConnectionGraph.empty()
+        .addNodes(L1, L2, A, S)
+        .updateEscapeState(L1 -> NoEscape)
+        .updateEscapeState(L2 -> NoEscape)
+        .updateEscapeState(A -> ArgEscape)
+        .updateEscapeState(S -> GlobalEscape)
+    cg.findByEscapeState(NoEscape) shouldBe Set(L1, L2)
+  }
+
+  it should "find outgoing nodes" in {
+    val L1 = LocalReferenceNode("L1")
+    val L2 = LocalReferenceNode("L2")
+    val L3 = LocalReferenceNode("L3")
+    val L4 = LocalReferenceNode("L4")
+    val S = StaticReferenceNode("S")
+    val cg =
+      ConnectionGraph.empty()
+        .addNodes(L1, L2, L3, L4, S)
+        .addEdge(S -> L1)
+        .addEdge(L1 -> L2)
+        .addEdge(L1 -> L3)
+        .addEdge(L3 -> L4)
+    cg.findOutgoingNodes(L1) shouldBe Set(L2, L3)
+  }
+
+  it should "create a nonlocal subgraph" in {
+    val L1 = LocalReferenceNode("L1")
+    val L2 = LocalReferenceNode("L2")
+    val L3 = LocalReferenceNode("L3")
+    val A1 = ActualReferenceNode("A1")
+    val A2 = ActualReferenceNode("A1")
+    val S1 = StaticReferenceNode("S1")
+    val S2 = StaticReferenceNode("S2")
+
+    val cg = ConnectionGraph.empty()
+      .addNodes(L1, L2, L3, A1, A2, S1, S2)
+      .updateEscapeStates(Set(L1, L2, L3) -> NoEscape)
+      .updateEscapeStates(Set(A1, A2) -> ArgEscape)
+      .updateEscapeStates(Set(S1, S2) -> GlobalEscape)
+      .addEdge(L1 -> L2)
+      .addEdge(A1 -> L3)
+      .addEdge(S1 -> L3)
+    val nonlocalSubgraph = cg.nonlocalSubgraph
+    nonlocalSubgraph.nodes shouldBe Set(A1, A2, S1, S2)
+    nonlocalSubgraph.edges shouldBe Set(DeferredEdge(A1 -> L3), DeferredEdge(S1 -> L3))
+    nonlocalSubgraph.escapeMap shouldBe Map(A1 -> ArgEscape, A2 -> ArgEscape, S1 -> GlobalEscape, S2 -> GlobalEscape)
+  }
+
 }
