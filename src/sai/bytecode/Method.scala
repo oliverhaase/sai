@@ -126,12 +126,13 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       frame <- frameSet
     } yield frame.cg
 
-    val resultGraph = connectionGraphs.toSet.reduce(_ merge _)
+    val graphs = connectionGraphs.toSet
+    val resultGraph = graphs.reduce(_ merge _)
 
     if (reachedThreshold) {
       resultGraph.bottomSolution
     } else {
-      resultGraph
+      ReachabilityAnalysis(resultGraph)
     }
   }
 

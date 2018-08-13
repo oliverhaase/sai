@@ -189,6 +189,20 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     copy(escapeMap = bottomSolution)
   }
 
+  def findByEscapeState(escapeState: EscapeState): Set[Node] = {
+    for {
+      node <- nodes if escapeMap(node) == escapeState
+    } yield node
+  }
+
+  def findOutgoingNodes(node: Node): Set[Node] = {
+    for {
+      edge <- edges if edge.from == node
+    } yield edge.to
+  }
+
+
+
   /**
     * Check if a node is a 'terminal node'.
     * A node is called a 'terminal node' if it has no outgoing (points-to) edges.
