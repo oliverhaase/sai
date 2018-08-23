@@ -13,6 +13,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   val isNative = bcelMethod.isNative
   val isDefined = !isAbstract && !isNative
 
+  def id = s"${clazz.name}:$name"
+
   private def body(bcelInstructions: List[InstructionHandle]) =
     for (bcelInstruction <- bcelInstructions)
       yield Instruction(bcelInstruction, cpg, this)

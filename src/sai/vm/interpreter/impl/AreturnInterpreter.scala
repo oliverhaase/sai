@@ -9,11 +9,11 @@ import vm.interpreter.InstructionInterpreter.Interpreter
 
 private[interpreter] object AreturnInterpreter extends InstructionInterpreter[ARETURN] {
   override def apply(i: ARETURN): Interpreter = {
-    case frame@Frame(_, _, stack, _, cg) =>
+    case frame@Frame(method, _, stack, _, cg) =>
       assert(i.getType.isInstanceOf[ObjectType])
       stack.peek match {
         case _@ObjectRef(_, node) =>
-          val returnNode = new PhantomReturnNode(node.id)
+          val returnNode = new PhantomReturnNode(method.id)
           val updatedCG =
             cg.addNodes(returnNode)
             .addEdge(returnNode -> node)
