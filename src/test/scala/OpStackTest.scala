@@ -2,7 +2,7 @@ package scala
 
 import org.scalatest.{FlatSpec, Matchers}
 import sai.vm.{DontCare, OpStack}
-import sai.vm.Reference.Null
+import sai.vm.ObjectRef.Null
 
 
 class OpStackTest extends FlatSpec with Matchers {

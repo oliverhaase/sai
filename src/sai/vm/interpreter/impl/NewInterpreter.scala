@@ -2,7 +2,7 @@ package vm.interpreter.impl
 
 import cg._
 import org.apache.bcel.generic.{NEW, ObjectType}
-import sai.vm.Reference
+import sai.vm.ObjectRef
 import vm.Frame
 import vm.interpreter.{Id, InstructionInterpreter}
 import vm.interpreter.InstructionInterpreter.Interpreter
@@ -22,7 +22,7 @@ private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
           .addEdge(localReferenceNode -> objectNode)
           .updateEscapeState(objectNode -> escapeState)
           .updateEscapeState(localReferenceNode -> NoEscape)
-      val objectRef = Reference(referenceType, localReferenceNode)
+      val objectRef = ObjectRef(referenceType, localReferenceNode)
       val updatedStack = stack.push(objectRef)
       frame.copy(stack = updatedStack, cg = updatedCG)
   }

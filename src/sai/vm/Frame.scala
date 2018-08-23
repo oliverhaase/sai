@@ -3,7 +3,7 @@ package vm
 import cg.{PhantomObjectNode, _}
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
-import sai.vm.{LocalVars, OpStack, Reference}
+import sai.vm.{LocalVars, OpStack, ObjectRef}
 
 case class Frame(method: Method, cpg: ConstantPoolGen, stack: OpStack, localVars: LocalVars, cg: ConnectionGraph) {
 }
@@ -21,7 +21,7 @@ object Frame {
 
     // create phantom nodes for actuals
     val phantomNodes = for {
-      (_, Reference(_, actual: ActualReferenceNode)) <- actuals
+      (_, ObjectRef(_, actual: ActualReferenceNode)) <- actuals
       phantom = PhantomObjectNode(actual)
     } yield phantom
 
@@ -31,12 +31,12 @@ object Frame {
 
     // create local nodes for actuals
     val localReferences = for {
-      (index, Reference(refType, actual: ActualReferenceNode)) <- actuals
-      localReference = Reference(refType, LocalReferenceNode(actual))
+      (index, ObjectRef(refType, actual: ActualReferenceNode)) <- actuals
+      localReference = ObjectRef(refType, LocalReferenceNode(actual))
     } yield index -> localReference
 
     val localNodes = for {
-      (_, Reference(_, local)) <- localReferences
+      (_, ObjectRef(_, local)) <- localReferences
     } yield local
 
     val localEscapes = for {

@@ -2,8 +2,8 @@ package vm.interpreter.impl
 
 import cg.{NoEscape, _}
 import org.apache.bcel.generic.{GETFIELD, ReferenceType}
-import sai.vm.Reference.Null
-import sai.vm.{DontCare, Reference}
+import sai.vm.ObjectRef.Null
+import sai.vm.{DontCare, ObjectRef}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
@@ -22,9 +22,9 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
             case Null =>
               updatedStack = updatedStack.push(Null)
               frame.copy(stack = updatedStack)
-            case _@Reference(_, q) =>
+            case _@ObjectRef(_, q) =>
               val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
-              updatedStack = updatedStack.push(Reference(refType, referenceNode))
+              updatedStack = updatedStack.push(ObjectRef(refType, referenceNode))
               frame.copy(stack = updatedStack, cg = updatedCG)
           }
         case _ =>
@@ -42,6 +42,7 @@ private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[G
         updatedCG =
           updatedCG
             .addNode(phantomObjectNode)
+            .addEdge(q -> phantomObjectNode)
             .updateEscapeState(phantomObjectNode -> ArgEscape)
         Set(phantomObjectNode)
       case nodes =>

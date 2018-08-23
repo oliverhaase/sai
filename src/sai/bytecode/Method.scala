@@ -4,7 +4,7 @@ import bytecode.{BasicBlock, BasicBlocks, ExceptionInfo}
 import cg._
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
-import sai.vm.Reference
+import sai.vm.ObjectRef
 import vm.Frame
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
@@ -56,7 +56,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     bcelMethod.getLineNumberTable.getSourceLine(pos)
   }
 
-  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, Reference] =
+  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
     if (bcelArgs == Nil)
       Map()
     else
@@ -64,14 +64,14 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         case basicType: org.apache.bcel.generic.BasicType =>
           argReferences(index + basicType.getSize, bcelArgs.tail)
         case referenceType: org.apache.bcel.generic.ReferenceType =>
-          argReferences(index + 1, bcelArgs.tail) + (index -> Reference(referenceType, ActualReferenceNode(this, index)))
+          argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, ActualReferenceNode(this, index)))
       }
 
-  val inputReferences: Map[Int, Reference] =
+  val inputReferences: Map[Int, ObjectRef] =
     if (bcelMethod.isStatic)
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> Reference(clazz.classType, ActualReferenceNode(this, 0)))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(clazz.classType, ActualReferenceNode(this, 0)))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
@@ -107,15 +107,18 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         else
           predecessorFrames.toSet
 
+      // create maximal connection graph
+      val mergedCG = inputFrames.map(_.cg).reduce(_ merge _)
+
       val outputFrames: Set[Frame] = for {
         inputFrame <- inputFrames
-        outputFrame = block.interpret(inputFrame)
+        outputFrame = block.interpret(inputFrame.copy(cg = mergedCG))
       } yield outputFrame
 
       val framesChanged = resultFrames.get(block).fold(true)(_ != outputFrames)
       if (framesChanged) {
         resultFrames(block) = outputFrames
-        worklist.appendAll(block.successors)
+        worklist.prependAll(block.successors)
       }
       iterations(block) = iterations.getOrElse(block, 0) + 1
       reachedThreshold = iterations(block) == threshold
@@ -132,7 +135,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     if (reachedThreshold) {
       resultGraph.bottomSolution
     } else {
-      ReachabilityAnalysis(resultGraph)
+      val result = ReachabilityAnalysis(resultGraph)//.bypassAll//.nonlocalSubgraph.bypassAll
+      result
     }
   }
 

@@ -2,8 +2,8 @@ package vm.interpreter.impl
 
 import cg._
 import org.apache.bcel.generic.{ATHROW, ReferenceType, Type}
-import sai.vm.Reference.Null
-import sai.vm.{OpStack, Reference}
+import sai.vm.ObjectRef.Null
+import sai.vm.{OpStack, ObjectRef}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
@@ -25,13 +25,13 @@ private[interpreter] object AthrowInterpreter extends InstructionInterpreter[ATH
               .updateEscapeState(referenceNode -> NoEscape)
               .updateEscapeState(objectNode -> GlobalEscape)
           val referenceType = Type.getType(classOf[NullPointerException]).asInstanceOf[ReferenceType]
-          val reference = Reference(referenceType, referenceNode)
+          val reference = ObjectRef(referenceType, referenceNode)
           val updatedStack = OpStack(reference :: Nil)
           frame.copy(cg = updatedCG, stack = updatedStack)
-        case _@Reference(_, node) =>
+        case reference@ObjectRef(_, node) =>
           val objects = cg.pointsTo(node)
           val updatedCG = cg.updateEscapeStates(objects -> GlobalEscape)
-          val updatedStack = OpStack(slot :: Nil)
+          val updatedStack = OpStack(reference :: Nil)
           frame.copy(cg = updatedCG, stack = updatedStack)
       }
   }

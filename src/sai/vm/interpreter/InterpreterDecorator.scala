@@ -3,7 +3,7 @@ package vm.interpreter
 import cg.{GlobalEscape, LocalReferenceNode, NoEscape, ObjectNode}
 import org.apache.bcel.generic.{ReferenceType, Type}
 import sai.bytecode.instruction.Instruction
-import sai.vm.Reference
+import sai.vm.ObjectRef
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 
@@ -35,7 +35,7 @@ private[interpreter] object RaisePhantomExceptionDecorator {
         val className = i.getTargetExceptionType
         val clazz = Class.forName(className)
         val classType = Type.getType(clazz).asInstanceOf[ReferenceType]
-        val objectRef = Reference(classType, referenceNode)
+        val objectRef = ObjectRef(classType, referenceNode)
 
         val updatedCG =
           cg

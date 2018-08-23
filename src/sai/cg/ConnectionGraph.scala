@@ -74,9 +74,9 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     */
   def addEdge(fromTo: (Node, Node)): ConnectionGraph = {
     val edge = fromTo match {
-      case (local: LocalReferenceNode, obj: ObjectNode) => PointsToEdge(local -> obj)
-      case (obj: ObjectNode, field: FieldReferenceNode) => FieldEdge(obj -> field)
-      case (ref1: ReferenceNode, ref2: ReferenceNode) => DeferredEdge(ref1 -> ref2)
+      case (from: ReferenceNode, to: ObjectNode) => PointsToEdge(from -> to)
+      case (from: ObjectNode, to: FieldReferenceNode) => FieldEdge(from -> to)
+      case (from: ReferenceNode, to: ReferenceNode) => DeferredEdge(from -> to)
       case (from, to) => throw new IllegalArgumentException(s"cannot create an edge for types ${from.getClass.getSimpleName} -> ${to.getClass.getSimpleName}")
     }
     addEdge(edge)

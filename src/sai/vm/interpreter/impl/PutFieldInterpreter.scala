@@ -2,8 +2,8 @@ package vm.interpreter.impl
 
 import cg.{NoEscape, _}
 import org.apache.bcel.generic.{PUTFIELD, ReferenceType}
-import sai.vm.Reference.Null
-import sai.vm.{OpStack, Reference, Slot}
+import sai.vm.ObjectRef.Null
+import sai.vm.{OpStack, ObjectRef, Slot}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.{Id, InstructionInterpreter}
@@ -20,7 +20,7 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
               frame.copy(stack = updatedStack)
             case (Null, _) =>
               frame.copy(stack = updatedStack)
-            case (_@Reference(_, p), _@Reference(_, q)) =>
+            case (_@ObjectRef(_, p), _@ObjectRef(_, q)) =>
               // we have an assignment in form of p.f = q
               val updatedCG = assignValueToReference(frame, i, p, q)
               frame.copy(stack = updatedStack, cg = updatedCG)

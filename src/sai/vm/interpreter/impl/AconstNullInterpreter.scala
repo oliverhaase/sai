@@ -1,7 +1,7 @@
 package vm.interpreter.impl
 
 import org.apache.bcel.generic.ACONST_NULL
-import sai.vm.Reference.Null
+import sai.vm.ObjectRef.Null
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 import vm.interpreter.InstructionInterpreter.Interpreter
