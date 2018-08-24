@@ -110,7 +110,9 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
 
   it should "create a bottom solution" in {
     val locals: Set[Node] = Set(LocalReferenceNode("L1"), LocalReferenceNode("L2"))
-    val objects: Set[Node] = Set(ObjectNode("O1"), ObjectNode("O2"))
+    val o1 = ObjectNode("O1")
+    val o2 = ObjectNode("O2")
+    val objects: Set[Node] = Set(o1, o2)
     val statics: Set[Node] = Set(StaticReferenceNode("S1"), StaticReferenceNode("S2"))
 
     val cg =
@@ -121,7 +123,8 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
         .updateEscapeStates(statics -> GlobalEscape)
 
     cg.escapeMap.values.toSet shouldBe Set(NoEscape, ArgEscape, GlobalEscape)
-    cg.bottomSolution.escapeMap.values.toSet shouldBe Set(GlobalEscape)
+    cg.bottomSolution.escapeMap(o1) shouldBe GlobalEscape
+    cg.bottomSolution.escapeMap(o2) shouldBe GlobalEscape
   }
 
   it should "find nodes by escape state" in {

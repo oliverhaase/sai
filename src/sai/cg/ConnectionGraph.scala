@@ -183,10 +183,10 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     * @return A new connection graph with all nodes marked as GlobalEscape.
     */
   def bottomSolution: ConnectionGraph = {
-    val bottomSolution = for {
-      (node, _) <- escapeMap
-    } yield node -> GlobalEscape
-    copy(escapeMap = bottomSolution)
+    val bottomSolution = nodes.collect {
+      case objectNode: ObjectNode => objectNode -> GlobalEscape
+    }
+    copy(escapeMap = escapeMap ++ bottomSolution)
   }
 
   def findByEscapeState(escapeState: EscapeState): Set[Node] = {
