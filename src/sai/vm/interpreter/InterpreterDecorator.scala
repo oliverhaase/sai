@@ -3,7 +3,7 @@ package vm.interpreter
 import cg.{GlobalEscape, LocalReferenceNode, NoEscape, ObjectNode}
 import org.apache.bcel.generic.{ReferenceType, Type}
 import sai.bytecode.instruction.Instruction
-import sai.vm.ObjectRef
+import sai.vm.{ObjectRef, OpStack}
 import vm.Frame
 import vm.interpreter.InstructionInterpreter.Interpreter
 
@@ -43,7 +43,7 @@ private[interpreter] object RaisePhantomExceptionDecorator {
             .addEdge(referenceNode -> objectNode)
             .updateEscapeState(referenceNode -> NoEscape)
             .updateEscapeState(objectNode -> GlobalEscape)
-        val updatedStack = stack.push(objectRef)
+        val updatedStack = OpStack(objectRef :: Nil)
 
         val updatedFrame = frame.copy(cg = updatedCG, stack = updatedStack)
         otherInterpreter(updatedFrame)
