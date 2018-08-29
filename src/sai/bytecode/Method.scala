@@ -100,17 +100,12 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
 
     while (worklist.nonEmpty && !reachedThreshold) {
       // Pick and remove any block from the worklist.
-      val block = worklist.removeAny()
+      val currentBlock = worklist.removeAny()
 
-      // We use all output frames of the current block's predecessors as input frames.
-      val inputFrames =
-        // We use an empty frame as input frame for the entry block since this block has no predecessor blocks.
-        if (block == entryBlock)
-          Set(Frame(this))
-        else for {
-          predecessor: BasicBlock <- block.predecessors.toSet
-          predecessorFrame <- outputFrames.getOrElse(predecessor, Set.empty[Frame])
-        } yield predecessorFrame
+      val inputFrames = currentBlock.predecessors match {
+        case Nil => Set(Frame(this))
+        case ps => ps.flatMap(outputFrames.getOrElse(_, Set.empty)).toSet
+      }
 
       // Merge connection graphs of each ingoing frame.
       val inState = inputFrames.map(_.cg).reduce(_ merge _)
@@ -119,20 +114,20 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       val interpretedFrames = for {
         inputFrame <- inputFrames
         frameToInterpret = inputFrame.copy(cg = inState)
-        outputFrame = block.interpret(frameToInterpret)
-      } yield outputFrame
+        interpretedFrame = currentBlock.interpret(frameToInterpret)
+      } yield interpretedFrame
 
       // There is a change if the output frames before the interpretation are different from those after the interpretation.
-      val framesChanged = outputFrames.get(block) != Some(interpretedFrames)
+      val framesChanged = outputFrames.get(currentBlock) != Some(interpretedFrames)
       if (framesChanged) {
         // Store the interpreted frames as output frames for the current block.
-        outputFrames(block) = interpretedFrames
+        outputFrames(currentBlock) = interpretedFrames
         // Add all successor blocks to the worklist since they may also change in the next iteration.
-        worklist ++= block.successors
+        worklist ++= currentBlock.successors
         // Increment the iteration counter for the block.
-        iterations(block) = iterations.getOrElse(block, 0) + 1
+        iterations(currentBlock) = iterations.getOrElse(currentBlock, 0) + 1
         // Check if we reached the threshold for the current block.
-        reachedThreshold = iterations(block) == threshold
+        reachedThreshold = iterations(currentBlock) == threshold
       }
     }
 
