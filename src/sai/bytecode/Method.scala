@@ -2,6 +2,7 @@ package sai.bytecode
 
 import bytecode.{BasicBlock, BasicBlocks, ExceptionInfo}
 import cg._
+import implicits.MutableSetExtensions.convert
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
 import sai.vm.ObjectRef
@@ -82,63 +83,69 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
   override def toString: String = name
 
   lazy val summary: ConnectionGraph = {
-    // Summary calculation starts with the first basic block in the control flow graph.
+
+    // The calculation of the summary information starts with the first basic block in the control flow graph.
     val entryBlock = controlFlowGraph.head
-    val worklist = scala.collection.mutable.ListBuffer(entryBlock)
+    // We use a worklist in which we store we still need to interpret.
+    val worklist = scala.collection.mutable.Set(entryBlock)
 
     // We store all output frames of each interpreted basic block.
-    val resultFrames = scala.collection.mutable.Map.empty[BasicBlock, Set[Frame]]
+    val outputFrames = scala.collection.mutable.Map.empty[BasicBlock, Set[Frame]]
 
     // A basic block is interpreted a maximum of 'threshold' times.
-    // The algorithm terminates prematurely if the limit of one block is reached.
+    // The algorithm terminates prematurely if the limit for a block has been reached.
     val iterations = scala.collection.mutable.Map.empty[BasicBlock, Int]
     val threshold = 10
     var reachedThreshold = false
 
     while (worklist.nonEmpty && !reachedThreshold) {
-      val block = worklist.remove(0)
+      // Pick and remove any block from the worklist.
+      val block = worklist.removeAny()
 
-      val predecessorFrames = for {
-        predecessor <- block.predecessors
-        outFrame <- resultFrames.getOrElse(predecessor, Set.empty[Frame])
-      } yield outFrame
-
-      val inputFrames: Set[Frame] =
-        if (predecessorFrames.isEmpty)
+      // We use all output frames of the current block's predecessors as input frames.
+      val inputFrames =
+        // We use an empty frame as input frame for the entry block since this block has no predecessor blocks.
+        if (block == entryBlock)
           Set(Frame(this))
-        else
-          predecessorFrames.toSet
+        else for {
+          predecessor: BasicBlock <- block.predecessors.toSet
+          predecessorFrame <- outputFrames.getOrElse(predecessor, Set.empty[Frame])
+        } yield predecessorFrame
 
-      // create maximal connection graph
-      val mergedCG = inputFrames.map(_.cg).reduce(_ merge _)
+      // Merge connection graphs of each ingoing frame.
+      val inState = inputFrames.map(_.cg).reduce(_ merge _)
 
-      val outputFrames: Set[Frame] = for {
+      // Interpret each input frame.
+      val interpretedFrames = for {
         inputFrame <- inputFrames
-        outputFrame = block.interpret(inputFrame.copy(cg = mergedCG))
+        frameToInterpret = inputFrame.copy(cg = inState)
+        outputFrame = block.interpret(frameToInterpret)
       } yield outputFrame
 
-      val framesChanged = resultFrames.get(block).fold(true)(_ != outputFrames)
+      // There is a change if the output frames before the interpretation are different from those after the interpretation.
+      val framesChanged = outputFrames.get(block) != Some(interpretedFrames)
       if (framesChanged) {
-        resultFrames(block) = outputFrames
-        worklist.prependAll(block.successors)
+        // Store the interpreted frames as output frames for the current block.
+        outputFrames(block) = interpretedFrames
+        // Add all successor blocks to the worklist since they may also change in the next iteration.
+        worklist ++= block.successors
+        // Increment the iteration counter for the block.
+        iterations(block) = iterations.getOrElse(block, 0) + 1
+        // Check if we reached the threshold for the current block.
+        reachedThreshold = iterations(block) == threshold
       }
-      iterations(block) = iterations.getOrElse(block, 0) + 1
-      reachedThreshold = iterations(block) == threshold
     }
 
-    val connectionGraphs = for {
-      frameSet <- resultFrames.values
-      frame <- frameSet
-    } yield frame.cg
-
-    val graphs = connectionGraphs.toSet
-    val resultGraph = graphs.reduce(_ merge _)
+    // Get all connection graphs of all output frames and merge them to build the summary graph.
+    val frames = outputFrames.values.flatten
+    val summary = frames.map(_.cg).reduce(_ merge _)
 
     if (reachedThreshold) {
-      resultGraph.bottomSolution
+      // If we reached the threshold, then we use the bottom solution (i.e. mark all object nodes as global escape)
+      summary.bottomSolution
     } else {
-      val result = ReachabilityAnalysis(resultGraph)//.bypassAll//.nonlocalSubgraph.bypassAll
-      result
+      // If we did not reach the threshold, we perform the reachability analysis in order to update the escape states of the nodes.
+      summary.performReachabilityAnalysis
     }
   }
 
