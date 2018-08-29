@@ -20,37 +20,37 @@ object Frame {
     val actuals = method.inputReferences
 
     // create phantom nodes for actuals
-    val phantomNodes = for {
+    val phantoms = for {
       (_, ObjectRef(_, actual: ActualReferenceNode)) <- actuals
-      phantom = PhantomObjectNode(actual)
+      phantom = PhantomReferenceNode(actual)
     } yield phantom
 
     val phantomEscapes = for {
-      phantom <- phantomNodes
+      phantom <- phantoms
     } yield phantom -> ArgEscape
 
     // create local nodes for actuals
-    val localReferences = for {
+    val formalReferences = for {
       (index, ObjectRef(refType, actual: ActualReferenceNode)) <- actuals
       localReference = ObjectRef(refType, LocalReferenceNode(actual))
     } yield index -> localReference
 
-    val localNodes = for {
-      (_, ObjectRef(_, local)) <- localReferences
-    } yield local
+    val formals = for {
+      (_, ObjectRef(_, formal)) <- formalReferences
+    } yield formal
 
-    val localEscapes = for {
-      local <- localNodes
-    } yield local -> NoEscape
+    val formalEscapes = for {
+      formal <- formals
+    } yield formal -> NoEscape
 
     // link local nodes with phantom nodes
     val edges = for {
-      (localNode: LocalReferenceNode, phantomNode: PhantomObjectNode) <- localNodes.zip(phantomNodes)
-      edge = PointsToEdge(localNode -> phantomNode)
+      (formal: LocalReferenceNode, phantom: PhantomReferenceNode) <- formals.zip(phantoms)
+      edge = DeferredEdge(formal -> phantom)
     } yield edge
 
-    val localVars = LocalVars(method.maxLocals, localReferences)
-    val cg = ConnectionGraph(localNodes.toSet ++ phantomNodes.toSet, edges.toSet, (localEscapes ++ phantomEscapes).toMap)
+    val localVars = LocalVars(method.maxLocals, formalReferences)
+    val cg = ConnectionGraph(formals.toSet ++ phantoms.toSet, edges.toSet, (formalEscapes ++ phantomEscapes).toMap)
     (localVars, cg)
   }
 }

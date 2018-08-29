@@ -38,7 +38,9 @@ object CGVisualizer {
   private def nodeText(node: Node) = {
     val position = node.id.substring(node.id.lastIndexOf(",") + 1)
     val prefix = node match {
-      case _: Phantom => "P"
+      case _: PhantomObjectNode => "PO"
+      case _: PhantomReturnNode => "PRet"
+      case _: PhantomReferenceNode => "PRef"
       case _: ObjectNode => "O"
       case _: LocalReferenceNode => "L"
       case _: FieldReferenceNode => "F"
