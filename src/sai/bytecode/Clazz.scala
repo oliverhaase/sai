@@ -22,4 +22,11 @@ class Clazz(val name: String) {
     case None => println("class " + name + " doesn't contain main method")
   }
 
+  def superClasses: List[Class[_]] = {
+    def collectSuperClasses(cl: Class[_]): List[Class[_]] = {
+      if (cl == null) Nil else cl :: collectSuperClasses(cl.getSuperclass)
+    }
+    collectSuperClasses(Class.forName(name).getSuperclass)
+  }
+
 }

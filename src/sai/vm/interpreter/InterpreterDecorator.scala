@@ -2,6 +2,7 @@ package vm.interpreter
 
 import cg.{GlobalEscape, LocalReferenceNode, NoEscape, ObjectNode}
 import org.apache.bcel.generic.{ObjectType, ReferenceType, Type}
+import sai.bytecode.Clazz
 import sai.bytecode.instruction.Instruction
 import sai.vm.{ObjectRef, OpStack}
 import vm.Frame
@@ -35,11 +36,8 @@ private[interpreter] object RaisePhantomExceptionDecorator {
           assert(stack.peek.isInstanceOf[ObjectRef])
           val objectRef = stack.peek.asInstanceOf[ObjectRef]
           val refType = objectRef.referenceType.asInstanceOf[ObjectType].getClassName
-          def supers(cl: Class[_]): List[Class[_]] = {
-            if (cl == null) Nil else cl :: supers(cl.getSuperclass)
-          }
-          val superClasses = supers(Class.forName(refType))
-          assert(superClasses.contains(classOf[java.lang.Throwable]))
+          val clazz = new Clazz(refType)
+          assert(clazz.superClasses.contains(classOf[java.lang.Throwable]))
           otherInterpreter(frame)
         } else {
           // create exception object since stack is empty
