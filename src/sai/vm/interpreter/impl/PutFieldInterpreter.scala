@@ -42,6 +42,7 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
         updatedCG =
           updatedCG
             .addNode(phantomObjectNode)
+            .addEdge(p -> phantomObjectNode)
             .updateEscapeState(phantomObjectNode -> ArgEscape)
         Set(phantomObjectNode)
       case nodes =>
