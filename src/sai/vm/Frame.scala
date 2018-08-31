@@ -1,9 +1,9 @@
 package vm
 
-import cg.{PhantomObjectNode, _}
+import cg._
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
-import sai.vm.{LocalVars, OpStack, ObjectRef}
+import sai.vm.{LocalVars, ObjectRef, OpStack}
 
 case class Frame(method: Method, cpg: ConstantPoolGen, stack: OpStack, localVars: LocalVars, cg: ConnectionGraph) {
 }

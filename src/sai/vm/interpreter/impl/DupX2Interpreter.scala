@@ -1,17 +1,16 @@
 package vm.interpreter.impl
 
-import org.apache.bcel.generic.DUP
+import org.apache.bcel.generic.DUP_X2
 import sai.vm.OpStack
 import vm.Frame
 import vm.interpreter.InstructionInterpreter
 import vm.interpreter.InstructionInterpreter.Interpreter
 
-private[interpreter] object DupInterpreter extends InstructionInterpreter[DUP] {
-
-  override def apply(i: DUP): Interpreter = {
+private[interpreter] object DupX2Interpreter extends InstructionInterpreter[DUP_X2] {
+  override def apply(i: DUP_X2): Interpreter = {
     case frame@Frame(_, _, stack, _, _) =>
       val updatedStack = stack match {
-        case OpStack(v :: rest) => OpStack(v :: v :: rest)
+        case OpStack(v1 :: v2 :: v3 :: rest) => OpStack(v1 :: v2 :: v3 :: v1 :: rest)
       }
       frame.copy(stack = updatedStack)
   }

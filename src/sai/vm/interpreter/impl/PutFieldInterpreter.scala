@@ -12,7 +12,9 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
 
   override def apply(i: PUTFIELD): Interpreter = {
     case frame@Frame(_, cpg, stack, _, _) =>
-      val (value, reference, updatedStack) = pop2(stack)
+      val value :: reference :: rest = stack.elements
+      val updatedStack = OpStack(rest)
+
       i.getFieldType(cpg) match {
         case _: ReferenceType =>
           (reference, value) match {
@@ -28,14 +30,6 @@ private[interpreter] object PutFieldInterpreter extends InstructionInterpreter[P
         case _ =>
           frame.copy(stack = updatedStack)
       }
-  }
-
-  private def pop2(stack: OpStack): (Slot, Slot, OpStack) = {
-    val value = stack.peek
-    var updatedStack = stack.pop
-    val objectRef = updatedStack.peek
-    updatedStack = updatedStack.pop
-    (value, objectRef, updatedStack)
   }
 
   private def assignValueToReference(frame: Frame, i: PUTFIELD, p: ReferenceNode, q: ReferenceNode): ConnectionGraph = {

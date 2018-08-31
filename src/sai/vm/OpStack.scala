@@ -2,15 +2,13 @@ package sai.vm
 
 import scala.annotation.tailrec
 
-case class OpStack(private val elements: List[Slot] = Nil) {
+case class OpStack(elements: List[Slot] = Nil) {
 
   def push(element: Slot, i: Int): OpStack = copy(List.fill(i)(element) ::: elements)
 
   def depth: Int = elements.size
 
   def push(element: Slot): OpStack = copy(element :: elements)
-
-  def dup: OpStack = push(peek)
 
   def peek: Slot = elements.head
 

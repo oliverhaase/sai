@@ -33,22 +33,9 @@ class OpStackTest extends FlatSpec with Matchers {
     stack.pop(3) shouldBe OpStack()
   }
 
-  it should "duplicate its top value" in {
-    var stack = OpStack()
-    stack = stack.push(DontCare)
-    stack = stack.dup
-    stack.depth shouldBe 2
-    stack.peek shouldBe DontCare
-  }
-
   it should "throw an exception if popped is called on an empty stack" in {
     val stack = OpStack()
     an [Exception] should be thrownBy stack.pop
-  }
-
-  it should "throw an exception if dup is called on an empty stack" in {
-    val stack = OpStack()
-    an [Exception] should be thrownBy stack.dup
   }
 
   it should "throw an exception if popped is called more times than elements exist" in {
