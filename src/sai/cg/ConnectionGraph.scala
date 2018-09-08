@@ -123,7 +123,13 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
       out <- outgoingDeferredEdges
     } yield DeferredEdge(in.from -> out.to)
 
-    val edgesToRemove = ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
+    val edgesToRemove =
+      if (keepPointsToEdges) {
+        ingoingDeferredEdges ++ outgoingDeferredEdges
+      } else {
+        ingoingDeferredEdges ++ outgoingPointsToEdges ++ outgoingDeferredEdges
+      }
+
     val edgesToAdd = bypassedPointsToEdges ++ bypassedDeferredEdges
 
     copy(edges = edges -- edgesToRemove ++ edgesToAdd)
@@ -223,6 +229,36 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     val argEscapeSubgraph = buildSubgraph(ArgEscape)
     globalEscapeSubgraph.merge(argEscapeSubgraph)
   }
+
+  def bypassDeferredEdges: ConnectionGraph = {
+
+    val terminalNodes = nodes.collect {
+      case node: ReferenceNode if isTerminalNode(node) => node
+    }
+
+    val nodesToBypass = edges.collect {
+      case DeferredEdge(_, node) if !terminalNodes.contains(node) => node
+    }
+
+    val pointsToEdges = for {
+      terminal <- terminalNodes
+      phantom = new PhantomObjectNode(terminal.id)
+      pointsToEdge = PointsToEdge(terminal -> phantom)
+    } yield pointsToEdge
+
+    // bypass all deferred edges expect those pointing to a terminal node
+    var cg = nodesToBypass.foldLeft(this)((cg, node) => cg.byPass(node))
+
+    // add points to edges
+    cg = pointsToEdges.foldLeft(cg)((cg, pointsToEdge) => cg.addNode(pointsToEdge.to).addEdge(pointsToEdge))
+
+    // bypass all terminal nodes but keep points-to edges
+    cg = terminalNodes.foldLeft(cg)((cg, node) => cg.byPass(node, keepPointsToEdges = true))
+
+    cg
+  }
+
+  def performReachabilityAnalysis: ConnectionGraph = ReachabilityAnalysis(this)
 
   /**
     * Check if a node is a 'terminal node'.
