@@ -1,5 +1,7 @@
 package cg
 
+import implicits.MutableSetExtensions._
+
 object ReachabilityAnalysis extends (ConnectionGraph => ConnectionGraph) {
 
   override def apply(cg: ConnectionGraph): ConnectionGraph = {
@@ -8,10 +10,9 @@ object ReachabilityAnalysis extends (ConnectionGraph => ConnectionGraph) {
     val worklist = scala.collection.mutable.Set.empty[Node]
 
     // nodes escaping globally
-    worklist ++= cg.findByEscapeState(GlobalEscape)
+    worklist ++= escapeStates.filter(_._2 == GlobalEscape).keys
     while (worklist.nonEmpty) {
-      val node = worklist.head
-      worklist -= node
+      val node = worklist.removeAny()
 
       val outgoingNodes = cg.findOutgoingNodes(node)
       outgoingNodes.foreach { outgoingNode =>
@@ -23,21 +24,20 @@ object ReachabilityAnalysis extends (ConnectionGraph => ConnectionGraph) {
     }
 
     // phantom argument nodes
-    worklist ++= cg.findByEscapeState(ArgEscape)
+    worklist ++= escapeStates.filter(_._2 == ArgEscape).keys
     while (worklist.nonEmpty) {
-      val node = worklist.head
-      worklist -= node
+      val node = worklist.removeAny()
 
       val outgoingNodes = cg.findOutgoingNodes(node)
       outgoingNodes.foreach { outgoingNode =>
-        if (escapeStates(outgoingNode) > GlobalEscape) {
+        if (escapeStates(outgoingNode) > ArgEscape) {
           escapeStates(outgoingNode) = ArgEscape
           worklist += outgoingNode
         }
       }
     }
 
-    cg.copy(escapeMap = cg.escapeMap ++ escapeStates)
+    cg.copy(escapeMap = escapeStates.toMap)
   }
 
 }
