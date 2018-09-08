@@ -2,9 +2,8 @@ package scala
 
 import cg._
 import org.scalatest.{FlatSpec, Matchers}
-import sai.vm.{DontCare, LocalVars, ObjectRef, OpStack}
+import sai.vm._
 import vm.Frame
-import sai.vm.ObjectRef.Null
 
 class FrameTest extends FlatSpec with Matchers {
 

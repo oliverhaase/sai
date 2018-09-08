@@ -14,11 +14,6 @@ case class OpStack(elements: List[Slot] = Nil) {
 
   def pop: OpStack = copy(elements.tail)
 
-  def swap = {
-    val value1 :: value2 :: rest = elements
-    OpStack(value2 :: value1 :: rest)
-  }
-
   @tailrec
   final def pop(n: Int): OpStack = n match {
     case 0 => this

@@ -1,8 +1,7 @@
 package scala
 
 import org.scalatest.{FlatSpec, Matchers}
-import sai.vm.{DontCare, OpStack}
-import sai.vm.ObjectRef.Null
+import sai.vm.{DontCare, Null, OpStack}
 
 
 class OpStackTest extends FlatSpec with Matchers {
@@ -42,11 +41,6 @@ class OpStackTest extends FlatSpec with Matchers {
     var stack = OpStack()
     stack = stack.push(DontCare).push(DontCare).push(DontCare)
     an [Exception] should be thrownBy stack.pop(4)
-  }
-
-  it should "swap the two top stack values" in {
-    val stack = OpStack(DontCare :: Null :: Nil)
-    stack.swap shouldBe OpStack(Null :: DontCare :: Nil)
   }
 
 }
