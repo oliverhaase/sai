@@ -1,31 +1,25 @@
 package vm.interpreter.impl
 
 import cg.{ArgEscape, PhantomReturnNode}
-import org.apache.bcel.generic.{ARETURN, ObjectType}
-import sai.vm.{ObjectRef, OpStack}
-import sai.vm.ObjectRef.Null
+import org.apache.bcel.generic.ARETURN
+import sai.vm.{Null, OpStack, Reference}
 import vm.Frame
-import vm.interpreter.InstructionInterpreter
-import vm.interpreter.InstructionInterpreter.Interpreter
+import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
-private[interpreter] object AreturnInterpreter extends InstructionInterpreter[ARETURN] {
-  override def apply(i: ARETURN): Interpreter = {
-    case frame@Frame(method, _, stack, _, cg) =>
-      assert(i.getType.isInstanceOf[ObjectType])
-      stack.peek match {
+private[interpreter] object AreturnInterpreter extends InterpreterBuilder[ARETURN] {
+
+  override def apply(i: ARETURN): InstructionInterpreter = {
+    case frame @ Frame(method, _, stack, _, cg) =>
+      val returnNode = new PhantomReturnNode(method.id)
+      var updatedCG =
+        cg.addNode(returnNode)
+          .updateEscapeState(returnNode -> ArgEscape)
+      updatedCG = (stack.peek: @unchecked) match {
         case Null =>
-          val returnNode = new PhantomReturnNode(method.id)
-          val updatedCG =
-            cg.addNodes(returnNode)
-              .updateEscapeState(returnNode -> ArgEscape)
-          frame.copy(stack = OpStack(), cg = updatedCG)
-        case _@ObjectRef(_, node) =>
-          val returnNode = new PhantomReturnNode(method.id)
-          val updatedCG =
-            cg.addNodes(returnNode)
-              .addEdge(returnNode -> node)
-              .updateEscapeState(returnNode -> ArgEscape)
-          frame.copy(stack = OpStack(), cg = updatedCG)
+          cg
+        case _ @Reference(_, node) =>
+          updatedCG.addEdge(returnNode -> node)
       }
+      frame.copy(stack = OpStack(), cg = updatedCG)
   }
 }

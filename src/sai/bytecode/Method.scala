@@ -5,7 +5,7 @@ import cg._
 import implicits.MutableSetExtensions.convert
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
-import sai.vm.ObjectRef
+import sai.vm.Reference
 import vm.Frame
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
@@ -59,7 +59,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     bcelMethod.getLineNumberTable.getSourceLine(pos)
   }
 
-  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, ObjectRef] =
+  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, Reference] =
     if (bcelArgs == Nil)
       Map()
     else
@@ -67,14 +67,14 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         case basicType: org.apache.bcel.generic.BasicType =>
           argReferences(index + basicType.getSize, bcelArgs.tail)
         case referenceType: org.apache.bcel.generic.ReferenceType =>
-          argReferences(index + 1, bcelArgs.tail) + (index -> ObjectRef(referenceType, ActualReferenceNode(this, index)))
+          argReferences(index + 1, bcelArgs.tail) + (index -> Reference(referenceType, ActualReferenceNode(this, index)))
       }
 
-  val inputReferences: Map[Int, ObjectRef] =
+  val inputReferences: Map[Int, Reference] =
     if (bcelMethod.isStatic)
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> ObjectRef(clazz.classType, ActualReferenceNode(this, 0)))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> Reference(clazz.classType, ActualReferenceNode(this, 0)))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
@@ -114,7 +114,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       val interpretedFrames = for {
         inputFrame <- inputFrames
         frameToInterpret = inputFrame.copy(cg = inState)
-        interpretedFrame = currentBlock.interpret(frameToInterpret)
+        interpretedFrame <- currentBlock.interpret(frameToInterpret)
       } yield interpretedFrame
 
       // There is a change if the output frames before the interpretation are different from those after the interpretation.
@@ -131,15 +131,13 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
       }
     }
 
-    // Get all connection graphs of all output frames and merge them to build the summary graph.
-    val frames = outputFrames.values.flatten
-    val summary = frames.map(_.cg).reduce(_ merge _)
-
     if (reachedThreshold) {
       // If we reached the threshold, then we use the bottom solution (i.e. mark all object nodes as global escape)
+      val summary = outputFrames.values.flatten.map(_.cg).reduce(_ merge _)
       summary.bottomSolution
     } else {
       // If we did not reach the threshold, we perform the reachability analysis in order to update the escape states of the nodes.
+      val summary = outputFrames(controlFlowGraph.last).map(_.cg).reduce(_ merge _)
       summary.performReachabilityAnalysis
     }
   }

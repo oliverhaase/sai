@@ -2,20 +2,20 @@ package vm.interpreter.impl
 
 import cg.{GlobalEscape, StaticReferenceNode}
 import org.apache.bcel.generic.{BasicType, GETSTATIC, ReferenceType}
-import sai.vm.{DontCare, ObjectRef}
+import sai.vm.{DontCare, Reference}
 import vm.Frame
+import vm.interpreter.InterpreterBuilder
 import vm.interpreter.InstructionInterpreter
-import vm.interpreter.InstructionInterpreter.Interpreter
 
-private[interpreter] object GetStaticInterpreter extends InstructionInterpreter[GETSTATIC] {
-  
-  override def apply(i: GETSTATIC): Interpreter = {
-    case frame@Frame(_, cpg, stack, _, cg) =>
+private[interpreter] object GetStaticInterpreter extends InterpreterBuilder[GETSTATIC] {
+
+  override def apply(i: GETSTATIC): InstructionInterpreter = {
+    case frame @ Frame(_, cpg, stack, _, cg) =>
       i.getFieldType(cpg) match {
         case referenceType: ReferenceType =>
           val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
-          val reference = ObjectRef(referenceType, staticReferenceNode)
-          val updatedStack = stack.push(reference)
+          val reference           = Reference(referenceType, staticReferenceNode)
+          val updatedStack        = stack.push(reference)
           val updatedCG =
             cg.addNode(staticReferenceNode)
               .updateEscapeState(staticReferenceNode -> GlobalEscape)

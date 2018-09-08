@@ -3,7 +3,7 @@ package sai.bytecode.instruction
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import vm.Frame
-import vm.interpreter.InstructionInterpreter
+import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
 class Instruction(val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
                   val method: Method) extends Ordered[Instruction] {
@@ -48,10 +48,9 @@ class Instruction(val bcelInstruction: org.apache.bcel.generic.InstructionHandle
     }
   }
 
-  def interpret(frame: Frame): Frame = {
+  def interpret(frame: Frame): List[Frame] = {
     val interpreter = InstructionInterpreter(this)
-    val resultFrame = interpreter(frame)
-    resultFrame
+    interpreter.interpret(frame)
   }
 
   final def predecessors: List[Instruction] =

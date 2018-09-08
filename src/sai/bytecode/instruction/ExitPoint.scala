@@ -16,7 +16,7 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
   override def lineNumber: Int = method.lastInstruction.lineNumber
 
-  override def interpret(frame: Frame): Frame = frame
+  override def interpret(frame: Frame): List[Frame] = frame :: Nil
 
   override def compare(that: Instruction): Int = 1
 

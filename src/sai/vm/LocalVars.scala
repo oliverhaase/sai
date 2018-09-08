@@ -1,6 +1,5 @@
 package sai.vm
 
-import sai.vm.ObjectRef.Null
 
 case class LocalVars(localVars: List[Slot]) {
 
@@ -11,7 +10,7 @@ case class LocalVars(localVars: List[Slot]) {
 }
 
 object LocalVars {
-  def apply(maxLocals: Int, argObjects: Map[Int, ObjectRef]): LocalVars = {
+  def apply(maxLocals: Int, argObjects: Map[Int, Reference]): LocalVars = {
     val builder: Array[Slot] = new Array(maxLocals)
 
     for (index <- 0 until maxLocals)

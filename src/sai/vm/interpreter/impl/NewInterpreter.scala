@@ -2,36 +2,23 @@ package vm.interpreter.impl
 
 import cg._
 import org.apache.bcel.generic.{NEW, ObjectType}
-import sai.vm.ObjectRef
+import sai.vm.Reference
 import vm.Frame
-import vm.interpreter.{Id, InstructionInterpreter}
-import vm.interpreter.InstructionInterpreter.Interpreter
+import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
 
-private[interpreter] object NewInterpreter extends InstructionInterpreter[NEW] {
+private[interpreter] object NewInterpreter extends InterpreterBuilder[NEW] {
 
-  override def apply(i: NEW): Interpreter = {
-    case frame@Frame(method, cpg, stack, _, cg) =>
-      val id = Id(method, i)
-      val objectNode = ObjectNode(id)
-      val localReferenceNode = LocalReferenceNode(id)
+  override def apply(i: NEW): InstructionInterpreter = {
+    case frame @ Frame(method, cpg, stack, _, cg) =>
+      val objectNode    = ObjectNode(Id(method, i))
       val referenceType = i.getLoadClassType(cpg)
-      val escapeState = determineEscapeState(referenceType)
+      val escapeState   = Helper.determineEscapeState(referenceType)
       val updatedCG =
-        cg
-          .addNodes(localReferenceNode, objectNode)
-          .addEdge(localReferenceNode -> objectNode)
+        cg.addNodes(objectNode)
           .updateEscapeState(objectNode -> escapeState)
-          .updateEscapeState(localReferenceNode -> NoEscape)
-      val objectRef = ObjectRef(referenceType, localReferenceNode)
+      val objectRef    = Reference(referenceType, objectNode)
       val updatedStack = stack.push(objectRef)
       frame.copy(stack = updatedStack, cg = updatedCG)
-  }
-
-  private def determineEscapeState(objectType: ObjectType): EscapeState = {
-    Class.forName(objectType.getClassName).getInterfaces match {
-      case interfaces if interfaces.contains(classOf[java.lang.Runnable]) => GlobalEscape
-      case _ => NoEscape
-    }
   }
 
 }

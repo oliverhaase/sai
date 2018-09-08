@@ -1,34 +1,33 @@
 package vm.interpreter.impl
 
-import cg.{GlobalEscape, ReferenceNode, StaticReferenceNode}
+import cg.{GlobalEscape, StaticReferenceNode}
 import org.apache.bcel.generic.{PUTSTATIC, ReferenceType}
-import sai.vm.ObjectRef
-import sai.vm.ObjectRef.Null
+import sai.vm.{Null, Reference}
 import vm.Frame
-import vm.interpreter.InstructionInterpreter
-import vm.interpreter.InstructionInterpreter.Interpreter
+import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
-private[interpreter] object PutStaticInterpreter extends InstructionInterpreter[PUTSTATIC] {
+private[interpreter] object PutStaticInterpreter extends InterpreterBuilder[PUTSTATIC] {
 
-  override def apply(i: PUTSTATIC): Interpreter = {
-    case frame@Frame(_, cpg, stack, _, cg) =>
-      val value = stack.peek
+  override def apply(i: PUTSTATIC): InstructionInterpreter = {
+    case frame @ Frame(_, cpg, stack, _, cg) =>
+      val value        = stack.peek
       val updatedStack = stack.pop
-      i.getReferenceType(cpg) match {
+      val updatedCG = i.getReferenceType(cpg) match {
         case referenceType: ReferenceType =>
           value match {
-            case Null =>
-              frame.copy(stack = updatedStack)
-            case ObjectRef(_, q) =>
+            case Reference(_, q) =>
               val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
-              val updatedCG = cg
-                .addNode(staticReferenceNode)
-                .addEdge(staticReferenceNode -> q)
-                .updateEscapeState(staticReferenceNode -> GlobalEscape)
-              frame.copy(stack = updatedStack, cg = updatedCG)
+              val updatedCG =
+                cg.addNode(staticReferenceNode)
+                  .addEdge(staticReferenceNode -> q)
+                  .updateEscapeState(staticReferenceNode -> GlobalEscape)
+              updatedCG
+            case _ =>
+              cg
           }
         case _ =>
-          frame.copy(stack = updatedStack)
+          cg
       }
+      frame.copy(stack = updatedStack, cg = updatedCG)
   }
 }

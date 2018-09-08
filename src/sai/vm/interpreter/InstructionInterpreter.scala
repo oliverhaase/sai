@@ -2,18 +2,19 @@ package vm.interpreter
 
 import sai.bytecode.instruction.Instruction
 import vm.Frame
-import vm.interpreter.InstructionInterpreter.Interpreter
 import vm.interpreter.impl._
 
-private[interpreter] trait InstructionInterpreter[I] {
-  def apply(i: I): Interpreter
+
+trait InstructionInterpreter {
+
+  protected[interpreter] def doInterpret(frame: Frame): Frame
+
+  def interpret(frame: Frame): List[Frame] = doInterpret(frame) :: Nil
 }
 
 object InstructionInterpreter {
 
-  type Interpreter = Frame => Frame
-
-  def apply(instruction: Instruction): Interpreter = {
+  def apply(instruction: Instruction): InstructionInterpreter = {
     val interpreter = lookupInterpreter(instruction.bcelInstruction.getInstruction)
     if (instruction.isExceptionTarget) {
       interpreter :: RaisePhantomExceptionDecorator(instruction)
@@ -22,9 +23,12 @@ object InstructionInterpreter {
     }
   }
 
-  private def lookupInterpreter(instruction: org.apache.bcel.generic.Instruction): Interpreter = instruction match {
+  private def lookupInterpreter(instruction: org.apache.bcel.generic.Instruction): InstructionInterpreter = instruction match {
+    case i: org.apache.bcel.generic.AASTORE => AastoreInterpreter(i)
+    case i: org.apache.bcel.generic.AALOAD => AaloadInterpreter(i)
     case i: org.apache.bcel.generic.ACONST_NULL => AconstNullInterpreter(i)
     case i: org.apache.bcel.generic.ALOAD => AloadInterpreter(i)
+    case i: org.apache.bcel.generic.ANEWARRAY => AnewarrayInterpreter(i)
     case i: org.apache.bcel.generic.ASTORE => AstoreInterpreter(i)
     case i: org.apache.bcel.generic.ATHROW => AthrowInterpreter(i)
     case i: org.apache.bcel.generic.ARETURN => AreturnInterpreter(i)
@@ -36,6 +40,7 @@ object InstructionInterpreter {
     case i: org.apache.bcel.generic.DUP2_X2 => Dup2X2Interpreter(i)
     case i: org.apache.bcel.generic.GETFIELD => GetFieldInterpreter(i)
     case i: org.apache.bcel.generic.GETSTATIC => GetStaticInterpreter(i)
+    case i: org.apache.bcel.generic.MULTIANEWARRAY => MultianewarrayInterpreter(i)
     case i: org.apache.bcel.generic.NEW => NewInterpreter(i)
     case i: org.apache.bcel.generic.PUTFIELD => PutFieldInterpreter(i)
     case i: org.apache.bcel.generic.PUTSTATIC => PutStaticInterpreter(i)

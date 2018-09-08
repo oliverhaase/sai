@@ -102,7 +102,7 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     * @param p local reference node to kill.
     * @return A connection graph with the localReferenceNode bypassed.
     */
-  def byPass(p: LocalReferenceNode): ConnectionGraph = {
+  def byPass(p: ReferenceNode, keepPointsToEdges: Boolean = false): ConnectionGraph = {
     val ingoingDeferredEdges = edges.collect {
       case edge@DeferredEdge(_, `p`) => edge
     }

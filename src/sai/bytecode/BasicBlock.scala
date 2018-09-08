@@ -20,7 +20,9 @@ class BasicBlock(val method: Method, val leader: Instruction) {
     for (basicBlock <- method.controlFlowGraph if basicBlock.successors.contains(this))
       yield basicBlock
 
-  def interpret(inFrame: Frame) = instructions.foldLeft(inFrame)((frame, i) => i.interpret(frame))
+  def interpret(inFrame: Frame): List[Frame] = {
+    instructions.foldLeft(inFrame :: Nil)((frames, i) => frames.flatMap(i.interpret))
+  }
 
   private lazy val lastInstruction: Instruction = {
     val leaders =

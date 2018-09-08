@@ -1,75 +1,55 @@
 package vm.interpreter.impl
 
-import cg.{NoEscape, _}
-import org.apache.bcel.generic.{GETFIELD, ReferenceType}
-import sai.vm.ObjectRef.Null
-import sai.vm.{DontCare, ObjectRef}
+import cg._
+import org.apache.bcel.generic.{GETFIELD, ReferenceType, Type}
+import sai.vm._
 import vm.Frame
-import vm.interpreter.InstructionInterpreter.Interpreter
-import vm.interpreter.{Id, InstructionInterpreter}
+import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
 
-private[interpreter] object GetFieldInterpreter extends InstructionInterpreter[GETFIELD] {
+private[interpreter] object GetFieldInterpreter extends InterpreterBuilder[GETFIELD] {
 
-  override def apply(i: GETFIELD): Interpreter = {
-    case frame@Frame(_, cpg, stack, _, _) =>
-
-      val slot = stack.peek
-      var updatedStack = stack.pop
+  override def apply(i: GETFIELD): InstructionInterpreter = new InstructionInterpreter {
+    override def interpret(frame: Frame): List[Frame] = {
+      val Frame(method, cpg, stack, _, cg) = frame
+      val objectref :: rest                = stack.elements
+      val updatedStack                     = OpStack(rest)
 
       i.getFieldType(cpg) match {
-        case refType: ReferenceType =>
-          slot match {
+        case _: ReferenceType =>
+          val fieldname = i.getFieldName(cpg)
+          (objectref: @unchecked) match {
+
             case Null =>
-              updatedStack = updatedStack.push(Null)
-              frame.copy(stack = updatedStack)
-            case _@ObjectRef(_, q) =>
-              val (referenceNode, updatedCG) = getFieldReference(q, frame, i)
-              updatedStack = updatedStack.push(ObjectRef(refType, referenceNode))
-              frame.copy(stack = updatedStack, cg = updatedCG)
+              frame.copy(stack = updatedStack.push(Null)) :: Nil
+
+            case _ @Reference(referenceType, objectNode: ObjectNode) =>
+              getfields(frame, cg, updatedStack, referenceType, fieldname, Set(objectNode))
+
+            case _ @Reference(referenceType, referenceNode: ReferenceNode) =>
+              val (objects, newCG) =
+                Helper.getPointsToOrCreatePhantomObject(cg, referenceNode, Id(method, i))
+              getfields(frame, newCG, updatedStack, referenceType, fieldname, objects)
           }
         case _ =>
-          updatedStack = updatedStack.push(DontCare)
-          frame.copy(stack = updatedStack)
+          frame.copy(stack = updatedStack.push(DontCare)) :: Nil
       }
-  }
-
-  private def getFieldReference(q: ReferenceNode, frame: Frame, i: GETFIELD): (ReferenceNode, ConnectionGraph) = {
-    var updatedCG = frame.cg
-
-    val objectNodes = updatedCG.pointsTo(q) match {
-      case nodes if nodes.isEmpty =>
-        val phantomObjectNode = new PhantomObjectNode(Id(frame.method, i))
-        updatedCG =
-          updatedCG
-            .addNode(phantomObjectNode)
-            .addEdge(q -> phantomObjectNode)
-            .updateEscapeState(phantomObjectNode -> ArgEscape)
-        Set(phantomObjectNode)
-      case nodes =>
-        nodes
     }
 
-    val fieldEdges = for {
-      objectNode <- objectNodes
-      fieldNode = FieldReferenceNode(objectNode, i.getFieldName(frame.cpg))
-    } yield FieldEdge(objectNode -> fieldNode)
-
-    val fieldNodes = for {
-      fieldEdge <- fieldEdges
-    } yield fieldEdge.to
-
-    val referenceNode = LocalReferenceNode(Id(frame.method, i))
-    val deferredEdges = for {
-      fieldNode <- fieldNodes
-    } yield DeferredEdge(referenceNode -> fieldNode)
-
-    val allNodes = fieldNodes ++ Set(referenceNode)
-
-    updatedCG = updatedCG
-      .addNodes(allNodes)
-      .addEdges(fieldEdges ++ deferredEdges)
-      .updateEscapeStates(allNodes -> NoEscape)
-
-    (referenceNode, updatedCG)
+    override protected[interpreter] def doInterpret(frame: Frame): Frame =
+      throw new UnsupportedOperationException
   }
+
+  private def getfields(frame: Frame,
+                        cg: ConnectionGraph,
+                        stack: OpStack,
+                        referenceType: Type,
+                        fieldname: String,
+                        objects: Set[ObjectNode]): List[Frame] = {
+    for {
+      obj                <- objects.toList
+      (field, updatedCG) = Helper.getOrCreateFieldNode(cg, obj, fieldname)
+      reference          = Reference(referenceType, field)
+    } yield frame.copy(stack = stack.push(reference), cg = updatedCG)
+  }
+
 }
