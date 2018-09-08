@@ -2,8 +2,15 @@ package ui
 
 import cg._
 import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
+import sai.bytecode.Clazz
 
 object CGVisualizer {
+
+  def visualize(clazzName: String, methodName: String): Unit = {
+    val clazz = new Clazz(clazzName)
+    val method = clazz.method(methodName).get
+    visualize(method.summary)
+  }
 
   def visualize(connectionGraph: ConnectionGraph) {
 
