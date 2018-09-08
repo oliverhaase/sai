@@ -9,7 +9,7 @@ scalaSource in Compile := baseDirectory.value / "src/sai"
 scalaSource in Test := baseDirectory.value / "src/test"
 
 // show full warning information
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions")
 
 // compile java example classes which are used in the scala tests
 unmanagedSourceDirectories in Test += baseDirectory.value / "src/test/artifacts"
