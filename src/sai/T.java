@@ -143,4 +143,9 @@ class T {
         return b ? other : null;
     }
 
+    void deferArgument(T other) {
+        other.f = new T();
+        other = this.f;
+    }
+
 }

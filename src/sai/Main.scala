@@ -14,7 +14,7 @@ object Main {
     } yield (method.name, method.summary)
     graphs.foreach(println)
 
-    CGVisualizer.visualize("sai.T", "returnOtherOrNull")
+    CGVisualizer.visualize("sai.Arr", "aaload")
 
   }
 

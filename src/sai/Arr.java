@@ -39,6 +39,13 @@ class Arr {
         a[0][0] = 20;
     }
 
+    static void aaload() {
+        Arr[] arr = new Arr[20];
+        arr[0] = new Arr();
+        Arr x = arr[0];
+        Arr y = arr[1];
+    }
+
     public static void main(String[] args) {
         multidimensionalArray();
     }
