@@ -14,7 +14,7 @@ private[interpreter] object PutStaticInterpreter extends InterpreterBuilder[PUTS
       val updatedStack = stack.pop
       val updatedCG = i.getReferenceType(cpg) match {
         case referenceType: ReferenceType =>
-          value match {
+          (value: @unchecked) match {
             case Reference(_, q) =>
               val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
               val updatedCG =
@@ -22,7 +22,7 @@ private[interpreter] object PutStaticInterpreter extends InterpreterBuilder[PUTS
                   .addEdge(staticReferenceNode -> q)
                   .updateEscapeState(staticReferenceNode -> GlobalEscape)
               updatedCG
-            case _ =>
+            case Null =>
               cg
           }
         case _ =>
