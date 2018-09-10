@@ -1,18 +1,43 @@
 package ui
 
+import java.io.File
+import java.nio.file.{FileSystem, FileSystems}
+
 import cg._
+import javafx.scene.shape.Path
 import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
+import org.graphstream.ui.spriteManager.SpriteManager
+import org.graphstream.ui.view.Viewer
 import sai.bytecode.Clazz
 
 object CGVisualizer {
 
-  def visualize(clazzName: String, methodName: String): Unit = {
+  def visualize(clazzName: String, methodName: String): SingleGraph = {
     val clazz = new Clazz(clazzName)
     val method = clazz.method(methodName).get
-    visualize(method.summary)
+    val graph = visualize(method.summary)
+
+    graph.addAttribute("ui.antialias")
+    val v = graph.display()
+
+    val spm = new SpriteManager(graph)
+    val sp1 = spm.addSprite(methodName)
+    sp1.addAttribute("ui.label", clazzName + " - " + methodName)
+    sp1.addAttribute("ui.style", "fill-color: white;\n\ttext-style: bold-italic; text-size: 20;")
+
+    sp1.setPosition(0, 0, 0)
+
+    graph
   }
 
-  def visualize(connectionGraph: ConnectionGraph) {
+  def screenshot(graph: SingleGraph, clazzName: String, methodName: String): Unit = {
+    val path = System.getProperty("user.home") + "/Desktop/graphs"
+    val filename = s"$clazzName-$methodName.png"
+    graph.addAttribute("ui.screenshot", s"$path/$filename")
+  }
+
+
+  def visualize(connectionGraph: ConnectionGraph): SingleGraph = {
 
     val graph = new SingleGraph("graph")
 
@@ -31,7 +56,7 @@ object CGVisualizer {
       abstractEdge.setAttribute("ui.label", edgeText(edge))
     }
 
-    graph.display()
+    graph
   }
 
   private def edgeId(edge: Edge) = s"${edge.getClass.getSimpleName}(${edge.from.id} -> ${edge.to.id})"
