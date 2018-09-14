@@ -27,7 +27,7 @@ private[interpreter] object GetFieldInterpreter extends InterpreterBuilder[GETFI
 
             case _ @Reference(referenceType, referenceNode: ReferenceNode) =>
               val (objects, newCG) =
-                Helper.getPointsToOrCreatePhantomObject(cg, referenceNode, Id(method, i))
+                Helper.getPointsToOrCreatePhantomObject(cg, referenceNode)
               getfields(frame, newCG, updatedStack, referenceType, fieldname, objects)
           }
         case _ =>

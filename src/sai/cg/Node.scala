@@ -41,3 +41,7 @@ class PhantomReferenceNode(override val id: String) extends ReferenceNode with P
 object PhantomReferenceNode {
   def apply(actualReferenceNode: ActualReferenceNode): PhantomReferenceNode = new PhantomReferenceNode(actualReferenceNode.id)
 }
+
+object PhantomObjectNode {
+  def apply(referenceNode: ReferenceNode): PhantomObjectNode = new PhantomObjectNode(s"PO/${referenceNode.id}")
+}

@@ -27,7 +27,7 @@ private[interpreter] object AaloadInterpreter extends InterpreterBuilder[AALOAD]
 
         case _ @Reference(referenceType, referenceNode: ReferenceNode) =>
           val (objectNodes, updatedCG) =
-            Helper.getPointsToOrCreatePhantomObject(cg, referenceNode, Id(method, i))
+            Helper.getPointsToOrCreatePhantomObject(cg, referenceNode)
           aaload(frame, updatedCG, objectNodes, referenceType, updatedStack)
       }
     }

@@ -18,13 +18,12 @@ object Helper {
     * If there are no object nodes, a phantom object node will be created and added to the cg.
     */
   def getPointsToOrCreatePhantomObject(cg: ConnectionGraph,
-                                       p: ReferenceNode,
-                                       phantomId: String): (Set[ObjectNode], ConnectionGraph) = {
+                                       p: ReferenceNode): (Set[ObjectNode], ConnectionGraph) = {
     cg.pointsTo(p) match {
       case nodes if nodes.nonEmpty =>
         (nodes, cg)
       case _ =>
-        val phantomObjectNode = new PhantomObjectNode(phantomId)
+        val phantomObjectNode = PhantomObjectNode(p)
         val updatedCG =
           cg.addNode(phantomObjectNode)
             .addEdge(p -> phantomObjectNode)

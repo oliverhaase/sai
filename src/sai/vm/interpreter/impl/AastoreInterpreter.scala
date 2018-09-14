@@ -25,7 +25,7 @@ private[interpreter] object AastoreInterpreter extends InterpreterBuilder[AASTOR
 
           case _ @Reference(_, referenceNode: ReferenceNode) =>
             val (objectNodes, updatedCG) =
-              Helper.getPointsToOrCreatePhantomObject(cg, referenceNode, Id(method, i))
+              Helper.getPointsToOrCreatePhantomObject(cg, referenceNode)
             aastore(frame, updatedCG, objectNodes, updatedStack, value)
         }
       }
