@@ -1,13 +1,8 @@
 package ui
 
-import java.io.File
-import java.nio.file.{FileSystem, FileSystems}
-
 import cg._
-import javafx.scene.shape.Path
 import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
 import org.graphstream.ui.spriteManager.SpriteManager
-import org.graphstream.ui.view.Viewer
 import sai.bytecode.Clazz
 
 object CGVisualizer {
@@ -18,7 +13,7 @@ object CGVisualizer {
     val graph = visualize(method.summary)
 
     graph.addAttribute("ui.antialias")
-    val v = graph.display()
+    graph.display()
 
     val spm = new SpriteManager(graph)
     val sp1 = spm.addSprite(methodName)

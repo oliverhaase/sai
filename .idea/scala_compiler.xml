@@ -6,6 +6,9 @@
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <option name="featureWarnings" value="true" />
+      <parameters>
+        <parameter value="-Ywarn-unused:-patvars" />
+      </parameters>
     </profile>
   </component>
 </project>

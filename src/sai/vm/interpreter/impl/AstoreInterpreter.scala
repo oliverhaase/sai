@@ -2,10 +2,9 @@ package vm.interpreter.impl
 
 import cg.{LocalReferenceNode, NoEscape}
 import org.apache.bcel.generic.ASTORE
-import sai.vm.{DontCare, Null, Reference}
+import sai.vm.Reference
 import vm.Frame
-import vm.interpreter.InterpreterBuilder
-import vm.interpreter.InstructionInterpreter
+import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
 private[interpreter] object AstoreInterpreter extends InterpreterBuilder[ASTORE] {
 

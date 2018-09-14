@@ -4,14 +4,14 @@ import cg._
 import org.apache.bcel.generic.{AALOAD, Type}
 import sai.vm.{Null, OpStack, Reference}
 import vm.Frame
-import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
+import vm.interpreter.{Helper, InstructionInterpreter, InterpreterBuilder}
 
 private[interpreter] object AaloadInterpreter extends InterpreterBuilder[AALOAD] {
 
   override def apply(i: AALOAD): InstructionInterpreter = new InstructionInterpreter {
 
     override def interpret(frame: Frame): List[Frame] = {
-      val Frame(method, _, stack, _, cg) = frame
+      val Frame(_, _, stack, _, cg) = frame
 
       val (arrayref, updatedStack) = (stack: @unchecked) match {
         case OpStack(_ :: array :: rest) => (array, OpStack(rest))

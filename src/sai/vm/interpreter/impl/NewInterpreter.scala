@@ -1,7 +1,7 @@
 package vm.interpreter.impl
 
 import cg._
-import org.apache.bcel.generic.{NEW, ObjectType}
+import org.apache.bcel.generic.NEW
 import sai.vm.Reference
 import vm.Frame
 import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}

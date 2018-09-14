@@ -1,8 +1,7 @@
 package vm.interpreter
 
 import cg._
-import org.apache.bcel.generic.{ObjectType, Type}
-import sai.vm.Reference
+import org.apache.bcel.generic.ObjectType
 
 object Helper {
 

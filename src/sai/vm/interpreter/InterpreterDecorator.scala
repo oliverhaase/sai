@@ -1,10 +1,10 @@
 package vm.interpreter
 
-import cg.{GlobalEscape, LocalReferenceNode, NoEscape, ObjectNode}
+import cg.{GlobalEscape, ObjectNode}
 import org.apache.bcel.generic.{ObjectType, ReferenceType, Type}
 import sai.bytecode.Clazz
 import sai.bytecode.instruction.Instruction
-import sai.vm.{Reference, OpStack}
+import sai.vm.{OpStack, Reference}
 import vm.Frame
 
 

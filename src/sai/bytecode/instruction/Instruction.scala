@@ -3,7 +3,7 @@ package sai.bytecode.instruction
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import vm.Frame
-import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
+import vm.interpreter.InstructionInterpreter
 
 class Instruction(val bcelInstruction: org.apache.bcel.generic.InstructionHandle, cpg: ConstantPoolGen,
                   val method: Method) extends Ordered[Instruction] {

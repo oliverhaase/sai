@@ -4,13 +4,13 @@ import cg._
 import org.apache.bcel.generic.{GETFIELD, ReferenceType, Type}
 import sai.vm._
 import vm.Frame
-import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
+import vm.interpreter.{Helper, InstructionInterpreter, InterpreterBuilder}
 
 private[interpreter] object GetFieldInterpreter extends InterpreterBuilder[GETFIELD] {
 
   override def apply(i: GETFIELD): InstructionInterpreter = new InstructionInterpreter {
     override def interpret(frame: Frame): List[Frame] = {
-      val Frame(method, cpg, stack, _, cg) = frame
+      val Frame(_, cpg, stack, _, cg) = frame
       val objectref :: rest                = stack.elements
       val updatedStack                     = OpStack(rest)
 

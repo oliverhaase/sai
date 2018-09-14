@@ -4,14 +4,14 @@ import cg._
 import org.apache.bcel.generic.AASTORE
 import sai.vm.{Null, OpStack, Reference, Slot}
 import vm.Frame
-import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
+import vm.interpreter.{Helper, InstructionInterpreter, InterpreterBuilder}
 
 private[interpreter] object AastoreInterpreter extends InterpreterBuilder[AASTORE] {
 
   override def apply(i: AASTORE): InstructionInterpreter =
     new InstructionInterpreter {
       override def interpret(frame: Frame): List[Frame] = {
-        val Frame(method, _, stack, _, cg) = frame
+        val Frame(_, _, stack, _, cg) = frame
         val value :: _ :: arrayRef :: rest = stack.elements
         val updatedStack                   = OpStack(rest)
 
