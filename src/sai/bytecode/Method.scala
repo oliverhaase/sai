@@ -95,7 +95,9 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
   override def toString: String = id
 
-  lazy val summary: ConnectionGraph = {
+  private def calcSummary(controlFlowGraph: List[BasicBlock],
+                          findSuccessors: BasicBlock => List[BasicBlock],
+                          findPredecessors: BasicBlock => List[BasicBlock]): ConnectionGraph = {
 
     // The calculation of the summary information starts with the first basic block in the control flow graph.
     val entryBlock = controlFlowGraph.head
@@ -115,7 +117,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
       // Pick and remove any block from the worklist.
       val currentBlock = worklist.removeAny()
 
-      val inputFrames = currentBlock.predecessors match {
+      val inputFrames = findPredecessors(currentBlock) match {
         case Nil => Set(Frame(this))
         case ps => ps.flatMap(outputFrames.getOrElse(_, Set.empty)).toSet
       }
@@ -136,7 +138,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
         // Store the interpreted frames as output frames for the current block.
         outputFrames(currentBlock) = interpretedFrames
         // Add all successor blocks to the worklist since they may also change in the next iteration.
-        worklist ++= currentBlock.successors
+        worklist ++= findSuccessors(currentBlock)
         // Increment the iteration counter for the block.
         iterations(currentBlock) = iterations.getOrElse(currentBlock, 0) + 1
         // Check if we reached the threshold for the current block.
@@ -154,6 +156,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
       summary.performReachabilityAnalysis
     }
   }
+
+  lazy val summary: ConnectionGraph = calcSummary(controlFlowGraph, _.successors, _.predecessors)
 
   def interpret {
     println(summary)
