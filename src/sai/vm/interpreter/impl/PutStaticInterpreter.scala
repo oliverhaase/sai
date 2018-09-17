@@ -22,7 +22,7 @@ private[interpreter] object PutStaticInterpreter extends InterpreterBuilder[PUTS
                   .addEdge(staticReferenceNode -> q)
                   .updateEscapeState(staticReferenceNode -> GlobalEscape)
               updatedCG
-            case Null =>
+            case _ =>
               cg
           }
         case _ =>

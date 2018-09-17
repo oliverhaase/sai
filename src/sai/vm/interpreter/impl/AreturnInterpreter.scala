@@ -2,7 +2,7 @@ package vm.interpreter.impl
 
 import cg.{ArgEscape, PhantomReturnNode}
 import org.apache.bcel.generic.ARETURN
-import sai.vm.{Null, OpStack, Reference}
+import sai.vm.{OpStack, Reference}
 import vm.Frame
 import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
@@ -14,11 +14,11 @@ private[interpreter] object AreturnInterpreter extends InterpreterBuilder[ARETUR
       var updatedCG =
         cg.addNode(returnNode)
           .updateEscapeState(returnNode -> ArgEscape)
-      updatedCG = (stack.peek: @unchecked) match {
-        case Null =>
-          cg
+      updatedCG = stack.peek match {
         case _ @Reference(_, node) =>
           updatedCG.addEdge(returnNode -> node)
+        case _ =>
+          cg
       }
       frame.copy(stack = OpStack(), cg = updatedCG)
   }
