@@ -12,7 +12,7 @@ object ReachabilityAnalysis extends (ConnectionGraph => ConnectionGraph) {
     // nodes escaping globally
     worklist ++= escapeStates.filter(_._2 == GlobalEscape).keys
     while (worklist.nonEmpty) {
-      val node = worklist.removeAny()
+      val node = worklist.removeArbitrary()
 
       val outgoingNodes = cg.findOutgoingNodes(node)
       outgoingNodes.foreach { outgoingNode =>
@@ -26,7 +26,7 @@ object ReachabilityAnalysis extends (ConnectionGraph => ConnectionGraph) {
     // phantom argument nodes
     worklist ++= escapeStates.filter(_._2 == ArgEscape).keys
     while (worklist.nonEmpty) {
-      val node = worklist.removeAny()
+      val node = worklist.removeArbitrary()
 
       val outgoingNodes = cg.findOutgoingNodes(node)
       outgoingNodes.foreach { outgoingNode =>

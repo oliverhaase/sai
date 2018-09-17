@@ -115,7 +115,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
     while (worklist.nonEmpty && !reachedThreshold) {
       // Pick and remove any block from the worklist.
-      val currentBlock = worklist.removeAny()
+      val currentBlock = worklist.removeArbitrary()
 
       val inputFrames = findPredecessors(currentBlock) match {
         case Nil => Set(Frame(this))

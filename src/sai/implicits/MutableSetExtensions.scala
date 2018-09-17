@@ -1,7 +1,7 @@
 package implicits
 
 class MutableSetExtensions[T](val set: scala.collection.mutable.Set[T]) {
-  def removeAny(): T = {
+  def removeArbitrary(): T = {
     val head = set.head
     set -= head
     head
