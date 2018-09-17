@@ -1,14 +1,21 @@
 package sai.bytecode
 
-import bytecode.{BasicBlock, BasicBlocks, ExceptionInfo}
+import bytecode._
 import cg._
 import implicits.MutableSetExtensions.convert
-import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
+import org.apache.bcel.generic.{
+  ConstantPoolGen,
+  InstructionHandle,
+  InstructionList,
+  InvokeInstruction
+}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
 import sai.vm.Reference
 import vm.Frame
 
-class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPoolGen, val clazz: Clazz) {
+class Method(bcelMethod: org.apache.bcel.classfile.Method,
+             val cpg: ConstantPoolGen,
+             val clazz: Clazz) {
 
   val isAbstract = bcelMethod.isAbstract
   val isNative = bcelMethod.isNative
@@ -51,7 +58,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     lookup(_.pc contains pc)
 
   def lookup(predicate: Instruction => Boolean): Instruction =
-    instructions.find(predicate)
+    instructions
+      .find(predicate)
       .getOrElse(throw new RuntimeException("instruction not found"))
 
   def lineNumber(bcelInstruction: org.apache.bcel.generic.InstructionHandle): Int = {
@@ -59,7 +67,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     bcelMethod.getLineNumberTable.getSourceLine(pos)
   }
 
-  private def argReferences(index: Int, bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, Reference] =
+  private def argReferences(index: Int,
+                            bcelArgs: List[org.apache.bcel.generic.Type]): Map[Int, Reference] =
     if (bcelArgs == Nil)
       Map()
     else
@@ -67,20 +76,24 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
         case basicType: org.apache.bcel.generic.BasicType =>
           argReferences(index + basicType.getSize, bcelArgs.tail)
         case referenceType: org.apache.bcel.generic.ReferenceType =>
-          argReferences(index + 1, bcelArgs.tail) + (index -> Reference(referenceType, ActualReferenceNode(this, index)))
+          argReferences(index + 1, bcelArgs.tail) + (index -> Reference(referenceType,
+                                                                        ActualReferenceNode(this,
+                                                                                            index)))
       }
 
   val inputReferences: Map[Int, Reference] =
     if (bcelMethod.isStatic)
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> Reference(clazz.classType, ActualReferenceNode(this, 0)))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> Reference(
+        clazz.classType,
+        ActualReferenceNode(this, 0)))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
   def name: String = bcelMethod.getName
 
-  override def toString: String = name
+  override def toString: String = id
 
   lazy val summary: ConnectionGraph = {
 
@@ -151,8 +164,14 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method, val cpg: ConstantPool
     println("." + toString + " " + inputReferences)
     instructions.foreach(instruction => instruction.print)
   }
+
+  override def equals(obj: scala.Any): Boolean = {
+    obj match {
+      case m: Method if m.id == id => true
+      case _                       => false
+    }
+  }
+
+  override def hashCode(): Int = id.hashCode
+
 }
-
-
-
-
