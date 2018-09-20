@@ -41,17 +41,17 @@ object CallGraph {
   def apply(method: Method): CallGraph = buildCallGraph(method)
 
   private def buildCallGraph(method: Method): CallGraph = {
-    val graph = scala.collection.mutable.Map.empty[Method, List[Method]]
+    val callGraph = scala.collection.mutable.Map.empty[Method, List[Method]]
 
     def analyze(m: Method): Unit = {
-      graph(m) = getSubProcedures(m).distinct
-      for (s <- graph(m) if !graph.contains(s)) {
+      callGraph(m) = getSubProcedures(m).distinct
+      for (s <- callGraph(m) if !callGraph.contains(s)) {
         analyze(s)
       }
     }
 
     analyze(method)
-    new CallGraph(graph.toMap)
+    new CallGraph(callGraph.toMap)
   }
 
   def getSubProcedures(method: Method): List[Method] = {
