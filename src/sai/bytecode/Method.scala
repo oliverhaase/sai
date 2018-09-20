@@ -18,8 +18,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
              val clazz: Clazz) {
 
   val isAbstract = bcelMethod.isAbstract
-  val isNative = bcelMethod.isNative
-  val isDefined = !isAbstract && !isNative
+  val isNative   = bcelMethod.isNative
+  val isDefined  = !isAbstract && !isNative
 
   def id = s"${clazz.name}:$name"
 
@@ -95,6 +95,42 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
   override def toString: String = id
 
+  lazy val callGraph: CallGraph = CallGraph(this)
+
+  lazy val nonRecursiveSummary: ConnectionGraph = {
+
+    def containsRecursiveCall(block: BasicBlock): Boolean = {
+      block.instructions.exists { i =>
+        Option(i.bcelInstruction).map(_.getInstruction) match {
+          case Some(invokeInstruction: InvokeInstruction) =>
+            val clazz = new Clazz(invokeInstruction.getClassName(cpg))
+            clazz.method(invokeInstruction.getMethodName(cpg)) match {
+              case Some(m) if m.callGraph.getSuccessorsRecursive(m).contains(this) =>
+                true
+              case _ =>
+                false
+            }
+          case _ => false
+        }
+      }
+    }
+
+    val nonRecBlocks = controlFlowGraph.filterNot(containsRecursiveCall)
+
+    if (nonRecBlocks.isEmpty) {
+      ConnectionGraph.empty()
+    } else {
+      def successors(block: BasicBlock): List[BasicBlock] =
+        block.successors.filter(nonRecBlocks.contains)
+
+      def predecessors(block: BasicBlock): List[BasicBlock] =
+        block.predecessors.filter(nonRecBlocks.contains)
+
+      calcSummary(nonRecBlocks, successors, predecessors)
+    }
+
+  }
+
   private def calcSummary(controlFlowGraph: List[BasicBlock],
                           findSuccessors: BasicBlock => List[BasicBlock],
                           findPredecessors: BasicBlock => List[BasicBlock]): ConnectionGraph = {
@@ -109,8 +145,8 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
     // A basic block is interpreted a maximum of 'threshold' times.
     // The algorithm terminates prematurely if the limit for a block has been reached.
-    val iterations = scala.collection.mutable.Map.empty[BasicBlock, Int]
-    val threshold = 10
+    val iterations       = scala.collection.mutable.Map.empty[BasicBlock, Int]
+    val threshold        = 10
     var reachedThreshold = false
 
     while (worklist.nonEmpty && !reachedThreshold) {
@@ -119,7 +155,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
       val inputFrames = findPredecessors(currentBlock) match {
         case Nil => Set(Frame(this))
-        case ps => ps.flatMap(outputFrames.getOrElse(_, Set.empty)).toSet
+        case ps  => ps.flatMap(outputFrames.getOrElse(_, Set.empty)).toSet
       }
 
       // Merge connection graphs of each ingoing frame.
@@ -127,7 +163,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
       // Interpret each input frame.
       val interpretedFrames = for {
-        inputFrame <- inputFrames
+        inputFrame       <- inputFrames
         frameToInterpret = inputFrame.copy(cg = inState)
         interpretedFrame <- currentBlock.interpret(frameToInterpret)
       } yield interpretedFrame
