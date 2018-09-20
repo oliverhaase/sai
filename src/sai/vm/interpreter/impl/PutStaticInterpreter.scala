@@ -9,14 +9,14 @@ import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 private[interpreter] object PutStaticInterpreter extends InterpreterBuilder[PUTSTATIC] {
 
   override def apply(i: PUTSTATIC): InstructionInterpreter = {
-    case frame @ Frame(_, cpg, stack, _, cg) =>
-      val value        = stack.peek
+    case frame@Frame(_, cpg, stack, _, cg) =>
+      val value = stack.peek
       val updatedStack = stack.pop
       val updatedCG = i.getReferenceType(cpg) match {
         case referenceType: ReferenceType =>
-          (value: @unchecked) match {
+          value match {
             case Reference(_, q) =>
-              val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
+              val staticReferenceNode = StaticReferenceNode(referenceType, i.getFieldName(cpg))
               val updatedCG =
                 cg.addNode(staticReferenceNode)
                   .addEdge(staticReferenceNode -> q)

@@ -13,7 +13,7 @@ private[interpreter] object GetStaticInterpreter extends InterpreterBuilder[GETS
     case frame @ Frame(_, cpg, stack, _, cg) =>
       i.getFieldType(cpg) match {
         case referenceType: ReferenceType =>
-          val staticReferenceNode = StaticReferenceNode(referenceType, i.getIndex)
+          val staticReferenceNode = StaticReferenceNode(referenceType, i.getFieldName(cpg))
           val reference           = Reference(referenceType, staticReferenceNode)
           val updatedStack        = stack.push(reference)
           val updatedCG =

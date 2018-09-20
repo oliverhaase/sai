@@ -30,7 +30,7 @@ object FieldReferenceNode {
 }
 
 object StaticReferenceNode {
-  def apply(referenceType: ReferenceType, index: Int) = new StaticReferenceNode(s"$referenceType,index=$index")
+  def apply(referenceType: ReferenceType, fieldName: String) = new StaticReferenceNode(s"$referenceType->$fieldName")
 }
 
 sealed trait Phantom
@@ -43,5 +43,6 @@ object PhantomReferenceNode {
 }
 
 object PhantomObjectNode {
-  def apply(referenceNode: ReferenceNode): PhantomObjectNode = new PhantomObjectNode(s"PO/${referenceNode.id}")
+  def apply(referenceNode: ReferenceNode): PhantomObjectNode =
+    new PhantomObjectNode(s"PO/${referenceNode.id}")
 }
