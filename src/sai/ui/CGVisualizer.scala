@@ -3,14 +3,15 @@ package ui
 import cg._
 import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
 import org.graphstream.ui.spriteManager.SpriteManager
-import sai.bytecode.Clazz
+import sai.bytecode.{Clazz, Program}
 
 object CGVisualizer {
 
   def visualize(clazzName: String, methodName: String): SingleGraph = {
-    val clazz = new Clazz(clazzName)
+    val clazz = Program.getClass(clazzName)
     val method = clazz.method(methodName).get
-    val graph = visualize(method.summary)
+    val summary = method.summary
+    val graph = visualize(summary)
 
     graph.addAttribute("ui.antialias")
     graph.display()
