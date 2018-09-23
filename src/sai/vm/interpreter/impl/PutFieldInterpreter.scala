@@ -9,7 +9,7 @@ import vm.interpreter.{Helper, InstructionInterpreter, InterpreterBuilder}
 private[interpreter] object PutFieldInterpreter extends InterpreterBuilder[PUTFIELD] {
 
   override def apply(i: PUTFIELD): InstructionInterpreter = {
-    case frame @ Frame(_, cpg, stack, _, cg) =>
+    case frame @ Frame(_, cpg, stack, _, cg, _) =>
       val value :: reference :: rest = stack.elements
       val updatedStack               = OpStack(rest)
 

@@ -9,7 +9,7 @@ import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 private[interpreter] object AreturnInterpreter extends InterpreterBuilder[ARETURN] {
 
   override def apply(i: ARETURN): InstructionInterpreter = {
-    case frame @ Frame(method, _, stack, _, cg) =>
+    case frame @ Frame(method, _, stack, _, cg, _) =>
       val returnNode = new PhantomReturnNode(method.id)
       var updatedCG =
         cg.addNode(returnNode)

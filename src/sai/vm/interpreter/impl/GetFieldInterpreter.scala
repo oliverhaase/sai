@@ -10,7 +10,7 @@ private[interpreter] object GetFieldInterpreter extends InterpreterBuilder[GETFI
 
   override def apply(i: GETFIELD): InstructionInterpreter = new InstructionInterpreter {
     override def interpret(frame: Frame): List[Frame] = {
-      val Frame(_, cpg, stack, _, cg) = frame
+      val Frame(_, cpg, stack, _, cg, _) = frame
       val objectref :: rest                = stack.elements
       val updatedStack                     = OpStack(rest)
 

@@ -9,7 +9,7 @@ import vm.interpreter.{Helper, Id, InstructionInterpreter, InterpreterBuilder}
 private[interpreter] object MultianewarrayInterpreter extends InterpreterBuilder[MULTIANEWARRAY] {
 
   override def apply(i: MULTIANEWARRAY): InstructionInterpreter = {
-    case frame @ Frame(method, cpg, stack, _, cg) =>
+    case frame @ Frame(method, cpg, stack, _, cg, _) =>
       val dimensions = i.getDimensions
       val slots      = stack.pop(dimensions).elements
 

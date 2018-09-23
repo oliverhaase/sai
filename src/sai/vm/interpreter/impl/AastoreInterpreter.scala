@@ -11,7 +11,7 @@ private[interpreter] object AastoreInterpreter extends InterpreterBuilder[AASTOR
   override def apply(i: AASTORE): InstructionInterpreter =
     new InstructionInterpreter {
       override def interpret(frame: Frame): List[Frame] = {
-        val Frame(_, _, stack, _, cg) = frame
+        val Frame(_, _, stack, _, cg, _) = frame
         val value :: _ :: arrayRef :: rest = stack.elements
         val updatedStack                   = OpStack(rest)
 

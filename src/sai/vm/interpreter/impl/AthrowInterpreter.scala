@@ -10,7 +10,7 @@ import vm.interpreter.{Id, InterpreterBuilder}
 private[interpreter] object AthrowInterpreter extends InterpreterBuilder[ATHROW] {
 
   override def apply(i: ATHROW): InstructionInterpreter = {
-    case frame @ Frame(m, _, stack, _, cg) =>
+    case frame @ Frame(m, _, stack, _, cg, _) =>
       val objectref = stack.peek
 
       (objectref: @unchecked) match {

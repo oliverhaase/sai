@@ -11,7 +11,7 @@ private[interpreter] object AaloadInterpreter extends InterpreterBuilder[AALOAD]
   override def apply(i: AALOAD): InstructionInterpreter = new InstructionInterpreter {
 
     override def interpret(frame: Frame): List[Frame] = {
-      val Frame(_, _, stack, _, cg) = frame
+      val Frame(_, _, stack, _, cg, _) = frame
 
       val (arrayref, updatedStack) = (stack: @unchecked) match {
         case OpStack(_ :: array :: rest) => (array, OpStack(rest))

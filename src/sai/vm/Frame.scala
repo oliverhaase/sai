@@ -9,7 +9,9 @@ case class Frame(method: Method,
                  cpg: ConstantPoolGen,
                  stack: OpStack,
                  localVars: LocalVars,
-                 cg: ConnectionGraph) {}
+                 cg: ConnectionGraph,
+                 cache: Map[Method, ConnectionGraph] = Map.empty[Method, ConnectionGraph]) {
+}
 
 object Frame {
 

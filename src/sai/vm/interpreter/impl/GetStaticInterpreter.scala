@@ -10,7 +10,7 @@ import vm.interpreter.InstructionInterpreter
 private[interpreter] object GetStaticInterpreter extends InterpreterBuilder[GETSTATIC] {
 
   override def apply(i: GETSTATIC): InstructionInterpreter = {
-    case frame @ Frame(_, cpg, stack, _, cg) =>
+    case frame @ Frame(_, cpg, stack, _, cg, _) =>
       i.getFieldType(cpg) match {
         case referenceType: ReferenceType =>
           val staticReferenceNode = StaticReferenceNode(referenceType, i.getFieldName(cpg))

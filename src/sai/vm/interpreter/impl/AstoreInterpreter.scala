@@ -9,7 +9,7 @@ import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 private[interpreter] object AstoreInterpreter extends InterpreterBuilder[ASTORE] {
 
   override def apply(i: ASTORE): InstructionInterpreter = {
-    case frame @ Frame(m, _, stack, localVars, cg) =>
+    case frame @ Frame(m, _, stack, localVars, cg, _) =>
       val objectref          = stack.peek
       val localReferenceNode = LocalReferenceNode(i.getIndex.toString)
 
