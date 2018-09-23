@@ -2,23 +2,21 @@ package bytecode
 
 import org.apache.bcel.generic.InvokeInstruction
 import sai.bytecode.instruction.Instruction
-import sai.bytecode.{Clazz, Method}
+import sai.bytecode.{Clazz, Method, Program}
 
 import scala.annotation.tailrec
 
-class CallGraph(graph: Map[Method, List[Method]]) {
+class CallGraph(graph: Map[Method, List[Method]], method: Method) {
 
-  def getSuccessors(method: Method): List[Method] = {
-    assert(graph.keySet.contains(method))
+  def getSuccessors(): List[Method] = {
     graph(method)
   }
 
-  def isRecursive(method: Method): Boolean = {
-    assert(graph.keySet.contains(method))
-    getSuccessorsRecursive(method).contains(method)
+  def isRecursive(): Boolean = {
+    recursive().contains(method)
   }
 
-  def getSuccessorsRecursive(method: Method): List[Method] = {
+  def recursive(): List[Method] = {
     @tailrec
     def go(xs: List[Method], result: List[Method]): List[Method] = {
       xs match {
@@ -27,11 +25,11 @@ class CallGraph(graph: Map[Method, List[Method]]) {
         case h :: t if result.contains(h) =>
           go(t, result)
         case h :: t =>
-          val unseen = getSuccessors(h).filterNot(result.contains)
+          val unseen = graph(h).filterNot(result.contains)
           go(t ::: unseen, h :: result)
       }
     }
-    go(getSuccessors(method), Nil)
+    go(getSuccessors(), Nil)
   }
 
 }
@@ -51,7 +49,7 @@ object CallGraph {
     }
 
     analyze(method)
-    new CallGraph(callGraph.toMap)
+    new CallGraph(callGraph.toMap, method)
   }
 
   def getSubProcedures(method: Method): List[Method] = {
@@ -61,7 +59,7 @@ object CallGraph {
       invokeInstruction = instruction.bcelInstruction.getInstruction.asInstanceOf[InvokeInstruction]
       className         = invokeInstruction.getClassName(cpg)
       methodName        = invokeInstruction.getMethodName(cpg)
-      clazz             = new Clazz(className)
+      clazz             = Program.getClass(className)
       method            <- clazz.method(methodName)
     } yield method
   }

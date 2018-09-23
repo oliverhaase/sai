@@ -17,35 +17,24 @@ class CallGraphTest extends FlatSpec with Matchers {
   val factorial       = clazz.method("factorial").get
 
   "A call graph" should "give you all successors of a method" in {
-    val pcg           = CallGraph(bound)
-    val subProcedures = pcg.getSuccessors(bound)
-    subProcedures shouldEqual min :: max :: Nil
+    CallGraph(bound).getSuccessors() shouldEqual min :: max :: Nil
   }
 
   it should "give you all successors of a method recursive" in {
-    val pcg           = CallGraph(bound)
-    val subProcedures = pcg.getSuccessorsRecursive(bound)
-    subProcedures shouldEqual log :: max :: min :: Nil
+    CallGraph(bound).recursive() shouldEqual log :: max :: min :: Nil
   }
 
-  it should "determine if a procedure is direct recursive" in {
-    val pcg = CallGraph(directRecursive)
-    pcg.isRecursive(directRecursive) shouldBe true
-
-    val pcg2 = CallGraph(bound)
-    pcg2.isRecursive(bound) shouldBe false
-  }
-
-  it should "determine if a procedure is mutual recursive" in {
-    val pcg = CallGraph(x)
-    pcg.isRecursive(x) shouldBe true
-    pcg.isRecursive(y) shouldBe true
+  it should "determine if a procedure is recursive" in {
+    CallGraph(directRecursive).isRecursive() shouldBe true
+    CallGraph(x).isRecursive() shouldBe true
+    CallGraph(bound).isRecursive() shouldBe false
   }
 
   it should "fff" in {
-    val pcg = CallGraph(factorial)
-    pcg.isRecursive(factorial) shouldBe true
-    pcg.getSuccessors(factorial) shouldBe factorial :: Nil
-    pcg.getSuccessorsRecursive(factorial) shouldBe factorial :: Nil
+    val callGraph = CallGraph(factorial)
+    callGraph.isRecursive() shouldBe true
+    callGraph.getSuccessors() shouldBe factorial :: Nil
+    callGraph.recursive() shouldBe factorial :: Nil
   }
+
 }
