@@ -1,29 +1,38 @@
 package sai
 
-import sai.bytecode.Clazz
+import cg.StaticReferenceNode
+import sai.bytecode.Program
 import ui.CGVisualizer
 
 object Main {
 
   def main(args: Array[String]): Unit = {
 
-    val x = for {
-      clazzName <- "sai.T" :: "sai.Arr" :: Nil
-      clazz = new Clazz(clazzName)
-      method <- clazz.methods
-      methodName = method.name
-    } yield (clazzName, methodName)
+    val staticReferenceNodes = Map(
+      "a"         -> 14,
+      "b"         -> 14,
+      "c"         -> 14,
+      "d"         -> 11,
+      "isEven"    -> 6,
+      "isOdd"     -> 6,
+      "factorial" -> 3
+    )
 
+    for {
+      methodName <- "d" :: scala.util.Random.shuffle(staticReferenceNodes.keySet.toList)
+      method     <- Program.getClass("sai.RecursiveExample").method(methodName)
+    } {
+      println(method.name)
+      assert(
+        method.summary.nodes.count(_.isInstanceOf[StaticReferenceNode]) == staticReferenceNodes(methodName)
+      )
+    }
 
-    x.foreach(y => {
-      val t = new Thread(() => {
-        val graph = CGVisualizer.visualize(y._1, y._2)
-        Thread.sleep(5000)
-        CGVisualizer.screenshot(graph, y._1, y._2)
-      })
-      t.start()
-      t.join()
-    })
+    /*val clazz = Program.getClass("sai.RecursiveExample")
+    val m = clazz.method("isEven").get
+    CGVisualizer.visualize(m.summary).display()
+    */
+
   }
 
 }
