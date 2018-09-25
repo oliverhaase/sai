@@ -5,106 +5,61 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class GraphInfoTest extends FlatSpec with Matchers {
 
-  "A GraphInfo" should "find all paths in a graph" in {
+  "A GraphInfo" should "propagate 'impassable' information to successor and predecessor nodes" in {
+
     val graph = Map(
-      1 -> (2 :: 3 :: 4 :: Nil),
-      2 -> (3 :: 5 :: Nil),
-      3 -> (6 :: Nil),
-      4 -> (6 :: Nil),
-      5 -> (6 :: Nil),
-      6 -> Nil
+      'a' -> ('b' :: 'e' :: 'f' :: Nil),
+      'b' -> ('c' :: 'e' :: Nil),
+      'c' -> ('d' :: Nil),
+      'd' -> ('j' :: Nil),
+      'e' -> ('d' :: 'j' :: Nil),
+      'f' -> ('g' :: 'h' :: Nil),
+      'g' -> ('h' :: Nil),
+      'h' -> ('i' :: Nil),
+      'i' -> ('j' :: Nil),
+      'j' -> Nil
     )
 
-    val paths = GraphInfo.getPaths[Int](1, graph(_))
-    paths shouldBe List(
-      1 :: 2 :: 3 :: 6 :: Nil,
-      1 :: 2 :: 5 :: 6 :: Nil,
-      1 :: 3 :: 6 :: Nil,
-      1 :: 4 :: 6 :: Nil
-    )
+    val allNodes = graph.keys.toList
+
+    def findSuccessors(c: Char) = graph(c)
+
+    def findPredecessors(c: Char) =
+      for {
+        n <- allNodes if findSuccessors(n).contains(c)
+      } yield n
+
+    val impassableNodes = 'c' :: 'h' :: Nil
+
+    val passableNodes =
+      GraphInfo.findPassableNodes(allNodes, impassableNodes, findSuccessors, findPredecessors)
+    passableNodes.sorted shouldBe List('a', 'b', 'd', 'e', 'j')
   }
 
-  it should "determine if a graph contains cycles or not" in {
-    val cyclic1 = Map(
-      1 -> (1 :: Nil)
-    )
-    GraphInfo.isCyclic(1, cyclic1(_)) shouldBe true
-
-    val cyclic2 = Map(
-      1 -> (2 :: Nil),
-      2 -> (3 :: Nil),
-      3 -> (1 :: Nil)
-    )
-    GraphInfo.isCyclic(1, cyclic2(_)) shouldBe true
-
-    val cyclic3 = Map(
-      1 -> (2 :: Nil),
-      2 -> (1 :: Nil)
-    )
-    GraphInfo.isCyclic(1, cyclic3(_)) shouldBe true
-
-
-    val nonCyclic1 = Map(
-      1 -> List.empty[Int]
-    )
-    GraphInfo.isCyclic(1, nonCyclic1(_)) shouldBe false
-
-    val nonCyclic2 = Map(
-      1 -> (2 :: Nil),
-      2 -> (3 :: Nil),
-      3 -> Nil
-    )
-    GraphInfo.isCyclic(1, nonCyclic2(_)) shouldBe false
-
-    val nonCyclic3 = Map(
-      1 -> (2 :: 3 :: Nil),
-      2 -> (3 :: 4 :: 5 :: Nil),
-      3 -> (4 :: Nil),
-      4 -> (6 :: Nil),
-      5 -> (6 :: Nil),
-      6 -> Nil
-    )
-    GraphInfo.isCyclic(1, nonCyclic3(_)) shouldBe false
-  }
-
-  it should "determine if there is a path from a node to another node" in {
+  it should "return an empty list if there is no passable path in graph form top to bottom" in {
     val graph = Map(
-      1 -> (2 :: Nil),
-      2 -> (2 :: 3 :: 4 :: Nil),
-      3 -> (4 :: 5 :: 6 :: Nil),
-      4 -> (7 :: 8 :: Nil),
-      5 -> (3 :: Nil),
-      6 -> Nil,
-      7 -> Nil,
-      8 -> Nil
+      'a' -> ('b' :: 'c' :: Nil),
+      'b' -> ('d' :: Nil),
+      'c' -> ('d' :: 'e' :: Nil),
+      'd' -> ('f' :: Nil),
+      'e' -> ('f' :: Nil),
+      'f' -> Nil
     )
 
-    GraphInfo.pathExists(1, 1, graph(_)) shouldBe false
-    GraphInfo.pathExists(1, 2, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 3, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 4, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 5, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 6, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 7, graph(_)) shouldBe true
-    GraphInfo.pathExists(1, 8, graph(_)) shouldBe true
+    val allNodes = graph.keys.toList
 
-    GraphInfo.pathExists(2, 1, graph(_)) shouldBe false
-    GraphInfo.pathExists(2, 2, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 3, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 4, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 5, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 6, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 7, graph(_)) shouldBe true
-    GraphInfo.pathExists(2, 8, graph(_)) shouldBe true
+    def findSuccessors(c: Char) = graph(c)
 
-    GraphInfo.pathExists(3, 1, graph(_)) shouldBe false
-    GraphInfo.pathExists(3, 2, graph(_)) shouldBe false
-    GraphInfo.pathExists(3, 3, graph(_)) shouldBe true
-    GraphInfo.pathExists(3, 4, graph(_)) shouldBe true
-    GraphInfo.pathExists(3, 5, graph(_)) shouldBe true
-    GraphInfo.pathExists(3, 6, graph(_)) shouldBe true
-    GraphInfo.pathExists(3, 7, graph(_)) shouldBe true
-    GraphInfo.pathExists(3, 8, graph(_)) shouldBe true
+    def findPredecessors(c: Char) =
+      for {
+        node <- allNodes if findSuccessors(node).contains(c)
+      } yield node
 
+    val impassableNodes = 'c' :: 'd' :: Nil
+
+    val passableNodes =
+      GraphInfo.findPassableNodes(allNodes, impassableNodes, findSuccessors, findPredecessors)
+    passableNodes.sorted shouldBe Nil
   }
+
 }

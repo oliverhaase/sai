@@ -9,14 +9,14 @@ object NonRecursiveSummary {
 
   def apply(method: Method): ConnectionGraph = {
 
-    val cpg = method.cpg
-
+    // a block contains a recursive call if it contains an invoke instruction which
+    // would cause 'method' to be invoked again (recursion)
     def containsRecursiveCall(block: BasicBlock): Boolean = {
       block.instructions.exists { i =>
         Option(i.bcelInstruction).map(_.getInstruction) match {
           case Some(invokeInstruction: InvokeInstruction) =>
-            val clazz = Program.getClass(invokeInstruction.getClassName(cpg))
-            clazz.method(invokeInstruction.getMethodName(cpg)) match {
+            val clazz = Program.getClass(invokeInstruction.getClassName(method.cpg))
+            clazz.method(invokeInstruction.getMethodName(method.cpg)) match {
               case Some(m) if m.callGraph.recursive().contains(method) =>
                 true
               case _ =>
@@ -27,32 +27,22 @@ object NonRecursiveSummary {
       }
     }
 
-    def findNonRecursiveSuccessorBlocks(block: BasicBlock): List[BasicBlock] = {
-      block.successors.filterNot(containsRecursiveCall)
-    }
-
-    def findNonRecursivePredecessorBlocks(block: BasicBlock): List[BasicBlock] = {
-      block.predecessors.filterNot(containsRecursiveCall)
-    }
-
-    val nonRecursivePathExists = GraphInfo.pathExists[BasicBlock](
-      from = method.controlFlowGraph.head,
-      to = method.controlFlowGraph.last,
-      findSuccessors = findNonRecursiveSuccessorBlocks
+    val nonRecursiveBlocks = GraphInfo.findPassableNodes[BasicBlock](
+      allNodes = method.controlFlowGraph,
+      impassableNodes = method.controlFlowGraph.filter(containsRecursiveCall),
+      findSuccessors = block => block.successors,
+      findPredecessors = block => block.predecessors
     )
 
-    if (!nonRecursivePathExists) {
+    if (nonRecursiveBlocks.isEmpty) {
       ConnectionGraph.empty()
     } else {
-
-      val nonRecursiveBasicBlocks = for {
-        basicBlock <- method.controlFlowGraph if !containsRecursiveCall(basicBlock)
-      } yield basicBlock
-
-      IntraproceduralAnalysis(Frame(method),
-                              nonRecursiveBasicBlocks,
-                              findNonRecursiveSuccessorBlocks,
-                              findNonRecursivePredecessorBlocks)
+      IntraproceduralAnalysis(
+        Frame(method),
+        nonRecursiveBlocks,
+        findSuccessors = block => block.successors.filter(nonRecursiveBlocks.contains),
+        findPredecessors = block => block.predecessors.filter(nonRecursiveBlocks.contains)
+      )
     }
   }
 
