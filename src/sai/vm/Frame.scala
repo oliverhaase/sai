@@ -10,7 +10,7 @@ case class Frame(method: Method,
                  stack: OpStack,
                  localVars: LocalVars,
                  cg: ConnectionGraph,
-                 cache: Map[Method, ConnectionGraph] = Map.empty[Method, ConnectionGraph]) {
+                 summaryCache: Map[Method, ConnectionGraph] = Map.empty[Method, ConnectionGraph]) {
 }
 
 object Frame {

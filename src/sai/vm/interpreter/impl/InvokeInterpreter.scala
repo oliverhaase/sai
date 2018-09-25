@@ -20,7 +20,7 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
   }
 
   def calc(i: InvokeInstruction, frame: Frame): ConnectionGraph = {
-    val Frame(currentMethod, cpg, _, _, _, cache) = frame
+    val Frame(currentMethod, cpg, _, _, _, summaryCache) = frame
 
     val methodToInvoke = Program.getClass(i.getClassName(cpg)).method(i.getMethodName(cpg)).get
 
@@ -33,19 +33,20 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
     if (!isRecursive) {
       methodToInvoke.summary
     } else {
-      val cgBefore         = cache.getOrElse(currentMethod, currentMethod.nonRecursiveSummary)
-      val cgMethodToInvoke = cache.getOrElse(methodToInvoke, methodToInvoke.nonRecursiveSummary)
-      val cgAfter          = cgBefore.merge(cgMethodToInvoke)
+      val cgBefore = summaryCache.getOrElse(currentMethod, currentMethod.nonRecursiveSummary)
+      val cgMethodToInvoke =
+        summaryCache.getOrElse(methodToInvoke, methodToInvoke.nonRecursiveSummary)
+      val cgAfter = cgBefore.merge(cgMethodToInvoke)
 
-      if (cgBefore == cgAfter && cache.contains(methodToInvoke)) {
-        cache(methodToInvoke)
+      if (cgBefore == cgAfter && summaryCache.contains(methodToInvoke)) {
+        summaryCache(methodToInvoke)
       } else {
         val initialFrame =
-          Frame(methodToInvoke).copy(cache = cache + (currentMethod -> cgAfter))
+          Frame(methodToInvoke).copy(summaryCache = summaryCache + (currentMethod -> cgAfter))
         IntraproceduralAnalysis(initialFrame,
                                 methodToInvoke.controlFlowGraph,
-                                _.successors,
-                                _.predecessors)
+                                findSuccessors = block => block.successors,
+                                findPredecessors = block => block.predecessors)
       }
     }
   }
