@@ -62,4 +62,29 @@ class GraphInfoTest extends FlatSpec with Matchers {
     passableNodes.sorted shouldBe Nil
   }
 
+  it should "pass for thesis example" in {
+    val graph = Map(
+      'a' -> ('b' :: 'c' :: Nil),
+      'b' -> ('d' :: 'e' :: Nil),
+      'c' -> ('f' :: 'h' :: Nil),
+      'd' -> ('g' :: Nil),
+      'e' -> ('g' :: Nil),
+      'f' -> ('e' :: Nil),
+      'g' -> ('i' :: Nil),
+      'h' -> ('i' :: Nil),
+      'i' -> Nil
+    )
+
+    val allNodes = graph.keys.toList
+    def findSuccessors(c: Char) = graph(c)
+    def findPredecessors(c: Char) =
+      for {
+        node <- allNodes if findSuccessors(node).contains(c)
+      } yield node
+    val impassableNodes = 'd' :: 'e' :: Nil
+    val passableNodes =
+      GraphInfo.findPassableNodes(allNodes, impassableNodes, findSuccessors, findPredecessors)
+    passableNodes.sorted shouldBe ('a' :: 'c' :: 'h' :: 'i' :: Nil)
+  }
+
 }

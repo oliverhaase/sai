@@ -181,4 +181,32 @@ class ConnectionGraphTest extends FlatSpec with Matchers {
     nonlocalSubgraph.escapeMap shouldBe Map(A1 -> ArgEscape, A2 -> ArgEscape, S1 -> GlobalEscape, S2 -> GlobalEscape)
   }
 
+  it should "find all object nodes via points-to" in {
+    val x = LocalReferenceNode("x")
+    val y = LocalReferenceNode("y")
+    val z = LocalReferenceNode("z")
+    val o1 = ObjectNode("o1")
+    val o2 = ObjectNode("o2")
+    val o3 = ObjectNode("o3")
+
+
+    val cg =
+      ConnectionGraph.empty()
+      .addNodes(x, y, z, o1, o2, o3)
+      .addEdge(x -> o1)
+      .addEdge(x -> y)
+      .addEdge(y -> z)
+      .addEdge(y -> o3)
+      .addEdge(z -> o2)
+
+    cg.pointsTo(x) shouldBe Set(o1, o2, o3)
+    val bypassed = cg.byPass(y)
+    bypassed shouldBe ConnectionGraph.empty()
+      .addNodes(x, y, z, o1, o2, o3)
+      .addEdge(x -> o1)
+      .addEdge(x -> z)
+      .addEdge(x -> o3)
+      .addEdge(z -> o2)
+
+  }
 }

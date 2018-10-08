@@ -148,4 +148,27 @@ class T {
         other = this.f;
     }
 
+
+    static T A1, A2, A3, B1, B2, B3;
+    static boolean someBooleanValue = true;
+    static void a() {
+        if (someBooleanValue) {
+            A1 = new T();
+        } else {
+            A2 = new T();
+            b();
+            A3 = new T();
+        }
+    }
+
+    static void b() {
+        if (someBooleanValue) {
+            B1 = new T();
+        } else {
+            B2 = new T();
+            a();
+            B3 = new T();
+        }
+    }
+
 }
