@@ -5,7 +5,7 @@ import cg._
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
 import sai.vm.Reference
-import vm.{Frame, IntraproceduralAnalysis, NonRecursiveSummary}
+import vm.{Frame, SummaryInformation, NonRecursiveSummaryInformation}
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method,
              val cpg: ConstantPoolGen,
@@ -93,10 +93,10 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
   lazy val callGraph = CallGraph(this)
 
-  lazy val nonRecursiveSummary = NonRecursiveSummary(this)
+  lazy val nonRecursiveSummary = NonRecursiveSummaryInformation(this)
 
   lazy val summary =
-    IntraproceduralAnalysis(Frame(this), controlFlowGraph, _.successors, _.predecessors)
+    SummaryInformation(Frame(this), controlFlowGraph, _.successors, _.predecessors)
 
   def interpret {
     println(summary)

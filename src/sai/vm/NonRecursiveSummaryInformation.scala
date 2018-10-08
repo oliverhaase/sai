@@ -5,7 +5,7 @@ import cg.ConnectionGraph
 import org.apache.bcel.generic.InvokeInstruction
 import sai.bytecode.{Method, Program}
 
-object NonRecursiveSummary {
+object NonRecursiveSummaryInformation {
 
   def apply(method: Method): ConnectionGraph = {
 
@@ -16,7 +16,7 @@ object NonRecursiveSummary {
         Option(i.bcelInstruction).map(_.getInstruction) match {
           case Some(invokeInstruction: InvokeInstruction) =>
             val clazz = Program.getClass(invokeInstruction.getClassName(method.cpg))
-            clazz.method(invokeInstruction.getMethodName(method.cpg)) match {
+            clazz.lookupMethod(invokeInstruction.getMethodName(method.cpg)) match {
               case Some(m) if m.callGraph.recursive().contains(method) =>
                 true
               case _ =>
@@ -37,7 +37,7 @@ object NonRecursiveSummary {
     if (nonRecursiveBlocks.isEmpty) {
       ConnectionGraph.empty()
     } else {
-      IntraproceduralAnalysis(
+      SummaryInformation(
         Frame(method),
         nonRecursiveBlocks,
         findSuccessors = block => block.successors.filter(nonRecursiveBlocks.contains),

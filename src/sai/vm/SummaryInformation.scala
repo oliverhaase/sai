@@ -4,7 +4,7 @@ import bytecode.BasicBlock
 import cg.ConnectionGraph
 import implicits.MutableSetExtensions.convert
 
-object IntraproceduralAnalysis {
+object SummaryInformation {
 
   def apply(initialFrame: Frame,
             controlFlowGraph: List[BasicBlock],
