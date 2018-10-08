@@ -6,7 +6,7 @@ import sai.bytecode.Clazz
 class ExceptionInfoTest extends FlatSpec with Matchers {
 
   val clazz = new Clazz("misc.BasicBlockExamples")
-  val method = clazz.method("multipleTryCatch").get
+  val method = clazz.lookupMethod("multipleTryCatch").get
   val exceptionInfo = method.exceptionInfo
 
   "An ExceptionInfo" should "find target successors" in {

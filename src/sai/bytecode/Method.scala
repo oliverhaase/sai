@@ -13,7 +13,9 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
   val isAbstract = bcelMethod.isAbstract
   val isNative   = bcelMethod.isNative
-  val isDefined  = !isAbstract && !isNative
+  val isDefined  = !isAbstract && !isNative && bcelMethod.getCode != null
+  val isPublic   = bcelMethod.isPublic
+  val isInstanceMethod = !bcelMethod.isStatic
 
   def id = s"${clazz.name}:$name"
 
@@ -114,4 +116,6 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
   }
 
   override def hashCode(): Int = id.hashCode
+
+  def signature = bcelMethod.getSignature
 }

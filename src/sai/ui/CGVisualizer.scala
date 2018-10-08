@@ -9,7 +9,7 @@ object CGVisualizer {
 
   def visualize(clazzName: String, methodName: String): SingleGraph = {
     val clazz = Program.getClass(clazzName)
-    val method = clazz.method(methodName).get
+    val method = clazz.lookupMethod(methodName).get
     val summary = method.summary
     val graph = visualize(summary)
 

@@ -7,14 +7,14 @@ import sai.bytecode.Clazz
 class CallGraphTest extends FlatSpec with Matchers {
 
   val clazz           = new Clazz("misc.CallGraphExample")
-  val bound           = clazz.method("bound").get
-  val min             = clazz.method("min").get
-  val max             = clazz.method("max").get
-  val log             = clazz.method("log").get
-  val directRecursive = clazz.method("directRecursive").get
-  val x               = clazz.method("x").get
-  val y               = clazz.method("y").get
-  val factorial       = clazz.method("factorial").get
+  val bound           = clazz.lookupMethod("bound").get
+  val min             = clazz.lookupMethod("min").get
+  val max             = clazz.lookupMethod("max").get
+  val log             = clazz.lookupMethod("log").get
+  val directRecursive = clazz.lookupMethod("directRecursive").get
+  val x               = clazz.lookupMethod("x").get
+  val y               = clazz.lookupMethod("y").get
+  val factorial       = clazz.lookupMethod("factorial").get
 
   "A call graph" should "give you all successors of a method" in {
     CallGraph(bound).getSuccessors() shouldEqual min :: max :: Nil

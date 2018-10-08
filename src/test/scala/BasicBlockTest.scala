@@ -9,7 +9,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   val clazz = new Clazz("misc.BasicBlockExamples")
 
   "A ControlFlowGraph" should "have 1 basic block for a method without control flow instructions" in {
-    val method = clazz.method("simple").get
+    val method = clazz.lookupMethod("simple").get
     val singleBlock :: Nil = method.controlFlowGraph
 
     singleBlock.predecessors shouldBe empty
@@ -18,7 +18,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 3 basic blocks for a method with an if-statement" in {
-    val method = clazz.method("ifStatement").get
+    val method = clazz.lookupMethod("ifStatement").get
     val entryBlock :: ifBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -35,7 +35,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic blocks for a method with an if-else-statement" in {
-    val method = clazz.method("ifElseStatement").get
+    val method = clazz.lookupMethod("ifElseStatement").get
     val entryBlock :: ifBlock :: elseBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -56,7 +56,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic blocks for a method with a while-loop" in {
-    val method = clazz.method("whileLoop").get
+    val method = clazz.lookupMethod("whileLoop").get
     val entryBlock :: whileCondition :: whileBody :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -77,7 +77,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 6 basic blocks for a method with an if-else-statement nested within a while loop" in {
-    val method = clazz.method("whileIfElse").get
+    val method = clazz.lookupMethod("whileIfElse").get
     val entryBlock :: whileCondition :: whileBegin :: ifBlock :: elseBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -106,7 +106,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic blocks for a method with a try-finally construct" in {
-    val method = clazz.method("tryFinally").get
+    val method = clazz.lookupMethod("tryFinally").get
     val entryTryBlock :: finallyBlock :: finallyThrowBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
@@ -123,7 +123,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 7 basic blocks for a method with a try-catch-finally construct" in {
-    val method = clazz.method("tryCatchFinally").get
+    val method = clazz.lookupMethod("tryCatchFinally").get
     val entryTryBlock :: tryFinallyBlock :: catchBlock :: catchFinallyBlock :: finallyThrowBlock :: preExitBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
@@ -149,7 +149,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 9 basic blocks for a method with a try-catch-catch-finally construct" in {
-    val method = clazz.method("tryCatchCatchFinally").get
+    val method = clazz.lookupMethod("tryCatchCatchFinally").get
     val entryTryBlock :: tryFinallyBlock :: catch1Block :: catch1FinallyBlock :: catch2Block :: catch2FinallyBlock :: finallyThrowBlock :: preExitBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
@@ -181,7 +181,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic blocks for a method with a try-catch construct" in {
-    val method = clazz.method("tryCatch").get
+    val method = clazz.lookupMethod("tryCatch").get
     val entryTryBlock :: gotoBlock :: catchBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryTryBlock.predecessors shouldBe empty
@@ -198,7 +198,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 1 basic block for a method without any instructions" in {
-    val method = clazz.method("emptyMethod").get
+    val method = clazz.lookupMethod("emptyMethod").get
     val singleBlock :: Nil = method.controlFlowGraph
 
     singleBlock.predecessors shouldBe empty
@@ -207,7 +207,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic block for a method without any instructions" in {
-    val method = clazz.method("multipleReturns").get
+    val method = clazz.lookupMethod("multipleReturns").get
     val entryBlock :: ifBlock :: afterIfBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -228,7 +228,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 3 basic blocks for a method with a do-while loop" in {
-    val method = clazz.method("doWhile").get
+    val method = clazz.lookupMethod("doWhile").get
     val entryBlock :: doWhileLoop :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -245,7 +245,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 4 basic blocks for a method with a foor loop" in {
-    val method = clazz.method("foorLoop").get
+    val method = clazz.lookupMethod("foorLoop").get
     val q = method.controlFlowGraph
     val entryBlock :: loopCondition :: loopBody :: exitBlock :: Nil = method.controlFlowGraph
 
@@ -267,7 +267,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
   }
 
   it should "have 5 basic blocks for a method with a switch-case-case-default statement" in {
-    val method = clazz.method("switchCaseCaseDefault").get
+    val method = clazz.lookupMethod("switchCaseCaseDefault").get
     val entryBlock :: case1Block :: case2Block :: defaultBlock :: exitBlock :: Nil = method.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty
@@ -293,7 +293,7 @@ class BasicBlockTest extends FlatSpec with Matchers {
 
   it should "define 6 basic blocks for function 'isPalindrome'" in {
     val palindromeChecker = new Clazz("misc.PalindromeChecker")
-    val isPalindrome = palindromeChecker.method("isPalindrome").get
+    val isPalindrome = palindromeChecker.lookupMethod("isPalindrome").get
     val entryBlock :: whileCheck :: ifCheck :: thenBlock :: elseBlock :: exitBlock :: Nil = isPalindrome.controlFlowGraph
 
     entryBlock.predecessors shouldBe empty

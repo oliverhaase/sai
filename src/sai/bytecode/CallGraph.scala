@@ -60,7 +60,7 @@ object CallGraph {
       className         = invokeInstruction.getClassName(cpg)
       methodName        = invokeInstruction.getMethodName(cpg)
       clazz             = Program.getClass(className)
-      method            <- clazz.method(methodName)
+      method            <- clazz.lookupMethod(methodName)
     } yield method
   }
 
