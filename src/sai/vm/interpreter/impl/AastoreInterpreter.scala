@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg._
+import ea._
 import org.apache.bcel.generic.AASTORE
 import sai.vm.{Null, OpStack, Reference, Slot}
 import vm.Frame

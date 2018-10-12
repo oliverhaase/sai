@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{NoEscape, _}
+import ea.{NoEscape, _}
 import org.apache.bcel.generic.{PUTFIELD, ReferenceType}
 import sai.vm.{OpStack, Reference}
 import vm.Frame

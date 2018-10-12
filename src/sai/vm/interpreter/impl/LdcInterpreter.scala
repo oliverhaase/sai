@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{NoEscape, ObjectNode}
+import ea.{NoEscape, ObjectNode}
 import org.apache.bcel.generic.{BasicType, LDC, ReferenceType}
 import sai.vm.{DontCare, Reference}
 import vm.Frame

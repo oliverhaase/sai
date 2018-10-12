@@ -1,8 +1,8 @@
-package vm
+package ea
 
 import bytecode.BasicBlock
-import cg.ConnectionGraph
 import implicits.MutableSetExtensions.convert
+import vm.Frame
 
 object SummaryInformation {
 

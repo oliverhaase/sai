@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg._
+import ea._
 import org.apache.bcel.generic.{ATHROW, ReferenceType, Type}
 import sai.vm.{Null, Reference, OpStack}
 import vm.Frame

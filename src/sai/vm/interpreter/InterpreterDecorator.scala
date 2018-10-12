@@ -1,6 +1,6 @@
 package vm.interpreter
 
-import cg.{GlobalEscape, ObjectNode}
+import ea.{GlobalEscape, ObjectNode}
 import org.apache.bcel.generic.{ObjectType, ReferenceType, Type}
 import sai.bytecode.Clazz
 import sai.bytecode.instruction.Instruction

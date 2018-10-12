@@ -1,4 +1,4 @@
-package cg
+package ea
 
 sealed trait Edge {
   val from: Node

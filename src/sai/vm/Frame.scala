@@ -1,6 +1,6 @@
 package vm
 
-import cg.{PhantomReferenceNode, _}
+import ea.{PhantomReferenceNode, _}
 import org.apache.bcel.generic.ConstantPoolGen
 import sai.bytecode.Method
 import sai.vm.{LocalVars, OpStack, Reference}

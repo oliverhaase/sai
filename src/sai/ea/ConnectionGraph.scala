@@ -1,6 +1,6 @@
-package cg
+package ea
 
-import cg.EscapeMap.EscapeMap
+import ea.EscapeMap.EscapeMap
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Set

@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{NoEscape, ObjectNode}
+import ea.{NoEscape, ObjectNode}
 import org.apache.bcel.generic.{ArrayType, MULTIANEWARRAY}
 import sai.vm.{OpStack, Reference}
 import vm.Frame

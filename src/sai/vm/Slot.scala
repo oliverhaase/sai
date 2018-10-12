@@ -1,6 +1,6 @@
 package sai.vm
 
-import cg.Node
+import ea.Node
 
 sealed trait Slot
 

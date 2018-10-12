@@ -1,6 +1,6 @@
 package scala
 
-import cg.{ArgEscape, GlobalEscape, NoEscape}
+import ea.{ArgEscape, GlobalEscape, NoEscape}
 import org.scalatest.{FlatSpec, Matchers}
 
 class EscapeStatesTest extends FlatSpec with Matchers {

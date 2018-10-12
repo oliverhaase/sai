@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{LocalReferenceNode, NoEscape}
+import ea.{LocalReferenceNode, NoEscape}
 import org.apache.bcel.generic.ASTORE
 import sai.vm.Reference
 import vm.Frame

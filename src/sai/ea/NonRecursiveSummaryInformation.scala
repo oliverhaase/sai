@@ -1,9 +1,9 @@
-package vm
+package ea
 
 import bytecode.{BasicBlock, GraphInfo}
-import cg.ConnectionGraph
 import org.apache.bcel.generic.InvokeInstruction
 import sai.bytecode.{Method, Program}
+import vm.Frame
 
 object NonRecursiveSummaryInformation {
 

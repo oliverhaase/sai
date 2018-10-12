@@ -1,6 +1,6 @@
 package ui
 
-import cg._
+import ea._
 import org.graphstream.graph.implementations.{AbstractEdge, SingleGraph, SingleNode}
 import org.graphstream.ui.spriteManager.SpriteManager
 import sai.bytecode.{Clazz, Program}

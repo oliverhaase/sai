@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{ArgEscape, PhantomReturnNode}
+import ea.{ArgEscape, PhantomReturnNode}
 import org.apache.bcel.generic.ARETURN
 import sai.vm.{OpStack, Reference}
 import vm.Frame

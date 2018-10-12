@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{GlobalEscape, StaticReferenceNode}
+import ea.{GlobalEscape, StaticReferenceNode}
 import org.apache.bcel.generic.{PUTSTATIC, ReferenceType}
 import sai.vm.{Null, Reference}
 import vm.Frame

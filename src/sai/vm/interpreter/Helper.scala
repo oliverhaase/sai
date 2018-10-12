@@ -1,6 +1,6 @@
 package vm.interpreter
 
-import cg._
+import ea._
 import org.apache.bcel.generic.ObjectType
 
 object Helper {

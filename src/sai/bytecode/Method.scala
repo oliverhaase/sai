@@ -1,11 +1,11 @@
 package sai.bytecode
 
 import bytecode._
-import cg._
+import ea._
 import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
 import sai.vm.Reference
-import vm.{Frame, SummaryInformation, NonRecursiveSummaryInformation}
+import vm.Frame
 
 class Method(bcelMethod: org.apache.bcel.classfile.Method,
              val cpg: ConstantPoolGen,

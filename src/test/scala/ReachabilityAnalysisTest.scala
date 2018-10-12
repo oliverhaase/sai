@@ -1,6 +1,6 @@
 package scala
 
-import cg._
+import ea._
 import org.scalatest.{FlatSpec, Matchers}
 
 class ReachabilityAnalysisTest extends FlatSpec with Matchers {

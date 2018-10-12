@@ -1,13 +1,13 @@
 package vm.interpreter.impl
 
-import cg.{ArgEscape, ConnectionGraph, PhantomReturnNode}
+import ea.{ArgEscape, ConnectionGraph, PhantomReturnNode, SummaryInformation}
 import org.apache.bcel.Const
 import org.apache.bcel.classfile.{ConstantInvokeDynamic, ConstantNameAndType}
 import org.apache.bcel.generic.{BasicType, _}
 import sai.bytecode.{Clazz, Method, Program}
 import sai.vm.{DontCare, OpStack, Reference}
 import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
-import vm.{Frame, SummaryInformation}
+import vm.Frame
 
 private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeInstruction] {
 

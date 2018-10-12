@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg.{NoEscape, ObjectNode}
+import ea.{NoEscape, ObjectNode}
 import org.apache.bcel.generic.{ANEWARRAY, ArrayType}
 import sai.vm.Reference
 import vm.Frame

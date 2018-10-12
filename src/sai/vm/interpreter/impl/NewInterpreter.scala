@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg._
+import ea._
 import org.apache.bcel.generic.NEW
 import sai.vm.Reference
 import vm.Frame

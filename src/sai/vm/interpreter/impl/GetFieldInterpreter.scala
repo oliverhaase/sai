@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import cg._
+import ea._
 import org.apache.bcel.generic.{GETFIELD, ReferenceType, Type}
 import sai.vm._
 import vm.Frame

@@ -1,4 +1,4 @@
-package cg
+package ea
 
 sealed abstract class EscapeState(private val id: Int, private val s: String) extends Ordered[EscapeState] {
 
