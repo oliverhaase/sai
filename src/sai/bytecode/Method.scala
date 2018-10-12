@@ -72,18 +72,16 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
         case basicType: org.apache.bcel.generic.BasicType =>
           argReferences(index + basicType.getSize, bcelArgs.tail)
         case referenceType: org.apache.bcel.generic.ReferenceType =>
-          argReferences(index + 1, bcelArgs.tail) + (index -> Reference(referenceType,
-                                                                        ActualReferenceNode(this,
-                                                                                            index)))
+          argReferences(index + 1, bcelArgs.tail) +
+            (index -> Reference(referenceType,LocalReferenceNode(this, index)))
       }
 
   val inputReferences: Map[Int, Reference] =
     if (bcelMethod.isStatic)
       argReferences(0, bcelMethod.getArgumentTypes.toList)
     else
-      argReferences(1, bcelMethod.getArgumentTypes.toList) + (0 -> Reference(
-        clazz.classType,
-        ActualReferenceNode(this, 0)))
+      argReferences(1, bcelMethod.getArgumentTypes.toList) +
+        (0 -> Reference(clazz.classType, LocalReferenceNode(this, 0)))
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 

@@ -18,7 +18,7 @@ case class FieldReferenceNode(id: String) extends ReferenceNode
 case class StaticReferenceNode(id: String) extends ReferenceNode
 
 object LocalReferenceNode {
-  def apply(actualReferenceNode: ActualReferenceNode) = new LocalReferenceNode(actualReferenceNode.id)
+  def apply(method: Method, index: Int) = new LocalReferenceNode(s"${method.id},index=$index")
 }
 
 object ActualReferenceNode {
@@ -39,7 +39,7 @@ class PhantomReturnNode(override val id: String) extends ActualReferenceNode(id)
 class PhantomReferenceNode(override val id: String) extends ReferenceNode with Phantom
 
 object PhantomReferenceNode {
-  def apply(actualReferenceNode: ActualReferenceNode): PhantomReferenceNode = new PhantomReferenceNode(actualReferenceNode.id)
+  def apply(referenceNode: ReferenceNode): PhantomReferenceNode = new PhantomReferenceNode(referenceNode.id)
 }
 
 object PhantomObjectNode {

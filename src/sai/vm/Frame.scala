@@ -10,48 +10,41 @@ case class Frame(method: Method,
                  stack: OpStack,
                  localVars: LocalVars,
                  cg: ConnectionGraph,
-                 summaryCache: Map[Method, ConnectionGraph] = Map.empty[Method, ConnectionGraph]) {
-}
+                 summaryCache: Map[Method, ConnectionGraph] = Map.empty[Method, ConnectionGraph]) {}
 
 object Frame {
 
   def apply(method: Method): Frame = {
-    val (localVars, cg) = transferActuals(method)
+    val (localVars, cg) = createPhantomReferences(method)
     new Frame(method, method.cpg, OpStack(), localVars, cg)
   }
 
-  private def transferActuals(method: Method) = {
+  private def createPhantomReferences(method: Method) = {
 
-    val actuals = method.inputReferences
-
-    // create phantom nodes for actuals
-    val phantoms = for {
-      (_, Reference(_, actual: ActualReferenceNode)) <- actuals
-      phantom                                        = PhantomReferenceNode(actual)
-    } yield phantom
-
-    val phantomEscapes = for {
-      phantom <- phantoms
-    } yield phantom -> ArgEscape
-
-    // create local nodes for actuals
-    val formalReferences = for {
-      (index, Reference(refType, actual: ActualReferenceNode)) <- actuals
-      localReference                                           = Reference(refType, LocalReferenceNode(actual))
-    } yield index -> localReference
+    val formalReferences = method.inputReferences
 
     val formals = for {
-      (_, Reference(_, formal)) <- formalReferences
+      (_, Reference(_, formal: LocalReferenceNode)) <- formalReferences
     } yield formal
 
     val formalEscapes = for {
       formal <- formals
     } yield formal -> NoEscape
 
+    // create phantom nodes for actuals
+    val phantoms = for {
+      formal  <- formals
+      phantom = PhantomReferenceNode(formal)
+    } yield phantom
+
+    val phantomEscapes = for {
+      phantom <- phantoms
+    } yield phantom -> ArgEscape
+
     // link local nodes with phantom nodes
     val edges = for {
-      (formal: LocalReferenceNode, phantom: PhantomReferenceNode) <- formals.zip(phantoms)
-      edge                                                        = DeferredEdge(formal -> phantom)
+      (formal, phantom) <- formals.zip(phantoms)
+      edge              = DeferredEdge(formal -> phantom)
     } yield edge
 
     val localVars = LocalVars(method.maxLocals, formalReferences)
