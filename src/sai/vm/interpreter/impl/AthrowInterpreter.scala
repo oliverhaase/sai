@@ -29,7 +29,7 @@ private[interpreter] object AthrowInterpreter extends InterpreterBuilder[ATHROW]
           // see JVMS-8 p. 378
           val objectNode = ObjectNode(Id(m, i))
           val updatedCG =
-            cg.addNodes(objectNode)
+            cg.addNode(objectNode)
               .updateEscapeState(objectNode -> GlobalEscape)
           val referenceType =
             Type.getType(classOf[NullPointerException]).asInstanceOf[ReferenceType]

@@ -48,8 +48,12 @@ object CGVisualizer {
 
     connectionGraph.edges.foreach{ edge =>
       val directed = true
-      val abstractEdge: AbstractEdge = graph.addEdge(edgeId(edge), edge.from.toString, edge.to.toString, directed)
-      abstractEdge.setAttribute("ui.label", edgeText(edge))
+      try {
+        val abstractEdge: AbstractEdge = graph.addEdge(edgeId(edge), edge.from.toString, edge.to.toString, directed)
+        abstractEdge.setAttribute("ui.label", edgeText(edge))
+      } catch {
+        case _ =>
+      }
     }
 
     graph

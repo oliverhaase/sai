@@ -21,7 +21,7 @@ private[interpreter] object GetStaticInterpreter extends InterpreterBuilder[GETS
               .updateEscapeState(staticReferenceNode -> GlobalEscape)
           frame.copy(stack = updatedStack, cg = updatedCG)
         case _: BasicType =>
-          val updatedStack = stack.push(DontCare)
+          val updatedStack = stack.push(DontCare, i.produceStack(cpg))
           frame.copy(stack = updatedStack)
       }
   }

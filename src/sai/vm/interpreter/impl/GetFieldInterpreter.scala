@@ -23,15 +23,15 @@ private[interpreter] object GetFieldInterpreter extends InterpreterBuilder[GETFI
               frame.copy(stack = updatedStack.push(Null)) :: Nil
 
             case _ @Reference(referenceType, objectNode: ObjectNode) =>
-              getfields(frame, cg, updatedStack, referenceType, fieldname, Set(objectNode))
+              getfields(frame, cg, updatedStack, i.getFieldType(cpg), fieldname, Set(objectNode))
 
             case _ @Reference(referenceType, referenceNode: ReferenceNode) =>
               val (objects, newCG) =
                 Helper.getPointsToOrCreatePhantomObject(cg, referenceNode)
-              getfields(frame, newCG, updatedStack, referenceType, fieldname, objects)
+              getfields(frame, newCG, updatedStack, i.getFieldType(cpg), fieldname, objects)
           }
         case _ =>
-          frame.copy(stack = updatedStack.push(DontCare)) :: Nil
+          frame.copy(stack = updatedStack.push(DontCare, i.produceStack(cpg))) :: Nil
       }
     }
 

@@ -247,10 +247,11 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     } yield pointsToEdge
 
     // bypass all deferred edges expect those pointing to a terminal node
-    var cg = nodesToBypass.foldLeft(this)((cg, node) => cg.byPass(node))
+    var cg = nodesToBypass.foldLeft(this)(_ byPass _)
 
     // add points to edges
-    cg = pointsToEdges.foldLeft(cg)((cg, pointsToEdge) => cg.addNode(pointsToEdge.to).addEdge(pointsToEdge))
+    cg = pointsToEdges.foldLeft(cg)((cg, pointsToEdge) =>
+      cg.addNode(pointsToEdge.to).addEdge(pointsToEdge).updateEscapeState(pointsToEdge.to -> NoEscape))
 
     // bypass all terminal nodes but keep points-to edges
     cg = terminalNodes.foldLeft(cg)((cg, node) => cg.byPass(node, keepPointsToEdges = true))
