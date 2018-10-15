@@ -1,37 +1,31 @@
 package sai
 
-import cg.StaticReferenceNode
 import sai.bytecode.Program
-import ui.CGVisualizer
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object Main {
 
   def main(args: Array[String]): Unit = {
 
-    val staticReferenceNodes = Map(
-      "a"         -> 14,
-      "b"         -> 14,
-      "c"         -> 14,
-      "d"         -> 11,
-      "isEven"    -> 6,
-      "isOdd"     -> 6,
-      "factorial" -> 3
-    )
+    val callGraphExamples = Program.getClass("sai.CallGraphExamples")
 
-    for {
-      methodName <- "d" :: scala.util.Random.shuffle(staticReferenceNodes.keySet.toList)
-      method     <- Program.getClass("sai.RecursiveExample").method(methodName)
-    } {
-      println(method.name)
-      assert(
-        method.summary.nodes.count(_.isInstanceOf[StaticReferenceNode]) == staticReferenceNodes(methodName)
-      )
+    val calculations = for {
+      method <- scala.util.Random.shuffle(callGraphExamples.methods)
+    } yield Future {
+      val t0 = System.currentTimeMillis()
+      val summary = method.summary
+      val t1 = System.currentTimeMillis()
+      (t1 - t0, method.id, summary)
     }
 
-    /*val clazz = Program.getClass("sai.RecursiveExample")
-    val m = clazz.method("isEven").get
-    CGVisualizer.visualize(m.summary).display()
-    */
+    val aggregated = Future.sequence(calculations)
+    val result = Await.result(aggregated, Duration.Inf)
+    result.foreach { case (calcTime, methodName, _) =>
+        println(s"$methodName: summary information calculation time $calcTime (ms)")
+    }
 
   }
 

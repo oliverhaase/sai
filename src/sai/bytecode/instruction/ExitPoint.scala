@@ -20,5 +20,5 @@ class ExitPoint(method: Method) extends Instruction(null, null, method) {
 
   override def compare(that: Instruction): Int = 1
 
-  override def toString = "exit point"
+  override def toString = s"$id exit point"
 }

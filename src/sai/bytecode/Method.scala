@@ -89,7 +89,7 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
 
   override def toString: String = id
 
-  lazy val callGraph = CallGraph(this)
+  def callGraph = CallGraph(this)
 
   lazy val nonRecursiveSummary = NonRecursiveSummaryInformation(this)
 

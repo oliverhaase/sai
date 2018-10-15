@@ -4,7 +4,7 @@ object Program {
 
   private type ClassName = String
 
-  private val classes = scala.collection.mutable.Map.empty[ClassName, Clazz]
+  private val classes = scala.collection.concurrent.TrieMap.empty[ClassName, Clazz]
 
   def getClass(name: ClassName) = classes.getOrElseUpdate(name, new Clazz(name))
 

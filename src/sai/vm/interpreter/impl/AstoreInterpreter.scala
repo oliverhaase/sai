@@ -11,7 +11,7 @@ private[interpreter] object AstoreInterpreter extends InterpreterBuilder[ASTORE]
   override def apply(i: ASTORE): InstructionInterpreter = {
     case frame @ Frame(m, _, stack, localVars, cg, _) =>
       val objectref          = stack.peek
-      val localReferenceNode = LocalReferenceNode(i.getIndex.toString)
+      val localReferenceNode = LocalReferenceNode(m, i.getIndex)
 
       val (updatedCG, newSlot) = objectref match {
 

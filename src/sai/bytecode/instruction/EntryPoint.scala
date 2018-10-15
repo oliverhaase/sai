@@ -19,6 +19,6 @@ class EntryPoint(method: Method) extends Instruction(null, null, method) {
 
   override def compare(that: Instruction): Int = -1
 
-  override def toString = "entry point"
+  override def toString = s"$id entry point"
 
 }
