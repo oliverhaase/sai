@@ -14,8 +14,8 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     * @return A new connection graph which represents the merge.
     */
   def merge(other: ConnectionGraph): ConnectionGraph = {
-    val newNodes = nodes.union(other.nodes)
-    val newEdges = edges.union(other.edges)
+    val newNodes     = nodes.union(other.nodes)
+    val newEdges     = edges.union(other.edges)
     val newEscapeSet = mergeEscapeSets(other)
     ConnectionGraph(newNodes, newEdges, newEscapeSet)
   }
@@ -74,10 +74,12 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     */
   def addEdge(fromTo: (Node, Node)): ConnectionGraph = {
     val edge = fromTo match {
-      case (from: ReferenceNode, to: ObjectNode) => PointsToEdge(from -> to)
-      case (from: ObjectNode, to: FieldReferenceNode) => FieldEdge(from -> to)
-      case (from: ReferenceNode, to: ReferenceNode) => DeferredEdge(from -> to)
-      case (from, to) => throw new IllegalArgumentException(s"cannot create an edge for types ${from.getClass.getSimpleName} -> ${to.getClass.getSimpleName}")
+      case (from: ReferenceNode, to: ObjectNode)      => PointsToEdge(from -> to)
+      case (from: ObjectNode, to: FieldReferenceNode) => FieldEdge(from    -> to)
+      case (from: ReferenceNode, to: ReferenceNode)   => DeferredEdge(from -> to)
+      case (from, to) =>
+        throw new IllegalArgumentException(
+          s"cannot create an edge for types ${from.getClass.getSimpleName} -> ${to.getClass.getSimpleName}")
     }
     addEdge(edge)
   }
@@ -104,22 +106,22 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     */
   def byPass(p: ReferenceNode, keepPointsToEdges: Boolean = false): ConnectionGraph = {
     val ingoingDeferredEdges = edges.collect {
-      case edge@DeferredEdge(_, `p`) => edge
+      case edge @ DeferredEdge(_, `p`) => edge
     }
     val outgoingPointsToEdges = edges.collect {
-      case edge@PointsToEdge(`p`, _) => edge
+      case edge @ PointsToEdge(`p`, _) => edge
     }
     val outgoingDeferredEdges = edges.collect {
-      case edge@DeferredEdge(`p`, _) => edge
+      case edge @ DeferredEdge(`p`, _) => edge
     }
 
     val bypassedPointsToEdges = for {
-      in <- ingoingDeferredEdges
+      in  <- ingoingDeferredEdges
       out <- outgoingPointsToEdges
     } yield PointsToEdge(in.from -> out.to)
 
     val bypassedDeferredEdges = for {
-      in <- ingoingDeferredEdges
+      in  <- ingoingDeferredEdges
       out <- outgoingDeferredEdges
     } yield DeferredEdge(in.from -> out.to)
 
@@ -150,7 +152,7 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     val (nodes: Set[Node], escapeState) = entries
     val states = for {
       node <- nodes
-      es = determineEscapeState(node, escapeState)
+      es   = determineEscapeState(node, escapeState)
     } yield (node, es)
     copy(escapeMap = escapeMap ++ states)
   }
@@ -168,17 +170,18 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
   def pointsTo(node: ReferenceNode): Set[ObjectNode] = {
 
     @tailrec
-    def pointsToRec(nodes: List[ReferenceNode], objects: Set[ObjectNode]): Set[ObjectNode] = nodes match {
-      case Nil => objects
-      case m :: tail =>
-        val pointsTo = edges.collect {
-          case PointsToEdge(`m`, n) => n
-        }
-        val deferred = edges.collect {
-          case DeferredEdge(`m`, to) => to
-        }
-        pointsToRec(tail ++ deferred, objects ++ pointsTo)
-    }
+    def pointsToRec(nodes: List[ReferenceNode], objects: Set[ObjectNode]): Set[ObjectNode] =
+      nodes match {
+        case Nil => objects
+        case m :: tail =>
+          val pointsTo = edges.collect {
+            case PointsToEdge(`m`, n) => n
+          }
+          val deferred = edges.collect {
+            case DeferredEdge(`m`, to) => to
+          }
+          pointsToRec(tail ++ deferred, objects ++ pointsTo)
+      }
 
     pointsToRec(List(node), objects = Set())
   }
@@ -226,7 +229,7 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
 
   def nonlocalSubgraph: ConnectionGraph = {
     val globalEscapeSubgraph = buildSubgraph(GlobalEscape)
-    val argEscapeSubgraph = buildSubgraph(ArgEscape)
+    val argEscapeSubgraph    = buildSubgraph(ArgEscape)
     globalEscapeSubgraph.merge(argEscapeSubgraph)
   }
 
@@ -241,8 +244,8 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     }
 
     val pointsToEdges = for {
-      terminal <- terminalNodes
-      phantom = new PhantomObjectNode(terminal.id)
+      terminal     <- terminalNodes
+      phantom      = new PhantomObjectNode(terminal.id)
       pointsToEdge = PointsToEdge(terminal -> phantom)
     } yield pointsToEdge
 
@@ -250,11 +253,14 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     var cg = nodesToBypass.foldLeft(this)(_ byPass _)
 
     // add points to edges
-    cg = pointsToEdges.foldLeft(cg)((cg, pointsToEdge) =>
-      cg.addNode(pointsToEdge.to).addEdge(pointsToEdge).updateEscapeState(pointsToEdge.to -> NoEscape))
+    cg = pointsToEdges.foldLeft(cg)(
+      (acc, pointsToEdge) =>
+        acc.addNode(pointsToEdge.to)
+          .addEdge(pointsToEdge)
+          .updateEscapeState(pointsToEdge.to -> NoEscape))
 
     // bypass all terminal nodes but keep points-to edges
-    cg = terminalNodes.foldLeft(cg)((cg, node) => cg.byPass(node, keepPointsToEdges = true))
+    cg = terminalNodes.foldLeft(cg)((acc, node) => acc.byPass(node, keepPointsToEdges = true))
 
     cg
   }
@@ -270,7 +276,9 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     */
   private def isTerminalNode(node: ReferenceNode) = pointsTo(node).isEmpty
 
-  override def toString: String = s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeMap.mkString("\n\t")}"
+  override def toString: String =
+    s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeMap
+      .mkString("\n\t")}"
 
 }
 

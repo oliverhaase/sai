@@ -61,11 +61,11 @@ object SummaryInformation {
     if (reachedThreshold) {
       // If we reached the threshold, then we use the bottom solution (i.e. mark all object nodes as global escape)
       val summary = outputFrames.values.flatten.map(_.cg).reduce(_ merge _)
-      summary.bottomSolution
+      summary.bottomSolution.bypassDeferredEdges.performReachabilityAnalysis.nonlocalSubgraph
     } else {
       // If we did not reach the threshold, we perform the reachability analysis in order to update the escape states of the nodes.
       val summary = outputFrames(controlFlowGraph.last).map(_.cg).reduce(_ merge _)
-      summary.performReachabilityAnalysis
+      summary.bypassDeferredEdges.performReachabilityAnalysis.nonlocalSubgraph
     }
   }
 
