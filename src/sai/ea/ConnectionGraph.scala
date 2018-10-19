@@ -170,9 +170,14 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
   def pointsTo(node: ReferenceNode): Set[ObjectNode] = {
 
     @tailrec
-    def pointsToRec(nodes: List[ReferenceNode], objects: Set[ObjectNode]): Set[ObjectNode] =
+    def pointsToRec(nodes: List[ReferenceNode],
+                    visited: Set[ReferenceNode],
+                    objects: Set[ObjectNode]): Set[ObjectNode] = {
       nodes match {
-        case Nil => objects
+        case Nil =>
+          objects
+        case m :: tail if visited.contains(m) =>
+          pointsToRec(tail, visited, objects)
         case m :: tail =>
           val pointsTo = edges.collect {
             case PointsToEdge(`m`, n) => n
@@ -180,10 +185,11 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
           val deferred = edges.collect {
             case DeferredEdge(`m`, to) => to
           }
-          pointsToRec(tail ++ deferred, objects ++ pointsTo)
+          pointsToRec(tail ++ deferred, visited + m, objects ++ pointsTo)
       }
+    }
 
-    pointsToRec(List(node), objects = Set())
+    pointsToRec(node :: Nil, visited = Set(), objects = Set())
   }
 
   /**
@@ -255,7 +261,8 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     // add points to edges
     cg = pointsToEdges.foldLeft(cg)(
       (acc, pointsToEdge) =>
-        acc.addNode(pointsToEdge.to)
+        acc
+          .addNode(pointsToEdge.to)
           .addEdge(pointsToEdge)
           .updateEscapeState(pointsToEdge.to -> NoEscape))
 
@@ -274,7 +281,9 @@ case class ConnectionGraph(nodes: Set[Node], edges: Set[Edge], escapeMap: Escape
     * @param node Node to check.
     * @return true if node is a terminal node, false otherwise.
     */
-  private def isTerminalNode(node: ReferenceNode) = pointsTo(node).isEmpty
+  private def isTerminalNode(node: ReferenceNode) = {
+    pointsTo(node).isEmpty
+  }
 
   override def toString: String =
     s"Nodes: \n\t${nodes.mkString("\n\t")}\nEdges: \n\t${edges.mkString("\n\t")}\nEscapeSet: \n\t${escapeMap
