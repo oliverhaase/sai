@@ -2,6 +2,7 @@ package vm.interpreter
 
 import ea._
 import org.apache.bcel.generic.ObjectType
+import sai.bytecode.Program
 
 object Helper {
 
@@ -41,10 +42,19 @@ object Helper {
     val clazz             = Class.forName(objectType.getClassName)
     val interfaces        = clazz.getInterfaces
     val runnableInterface = classOf[java.lang.Runnable]
-    if (interfaces.contains(runnableInterface))
+    if (interfaces.contains(runnableInterface) || overridesFinalizeMethod(objectType))
       GlobalEscape
     else
       NoEscape
+  }
+
+  def overridesFinalizeMethod(objectType: ObjectType): Boolean = {
+    val clazz = Program.getClass(objectType.getClassName)
+    // check if clazz or any superclass (other than 'Object' = dropRight(1)) overrides the finalize method
+    (clazz :: clazz.superClasses)
+      .dropRight(1)
+      .flatMap(_.methods)
+      .exists(_.name == "finalize")
   }
 
   /**
