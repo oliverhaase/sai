@@ -1,6 +1,6 @@
 package vm.interpreter.impl
 
-import ea.{ArgEscape, ConnectionGraph, PhantomReturnNode, SummaryInformation}
+import ea._
 import org.apache.bcel.Const
 import org.apache.bcel.classfile.{ConstantInvokeDynamic, ConstantNameAndType}
 import org.apache.bcel.generic.{BasicType, _}
@@ -27,8 +27,10 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
           frame.stack.pop(i.consumeStack(frame.cpg)).push(DontCare, basicType.getSize)
         case objectType: ObjectType =>
           val returnNode = findOrCreateReturnNode(resultSummary, methodToInvoke)
-          if (!updatedCG.nodes.contains(returnNode))
-            updatedCG = updatedCG.addNode(returnNode).updateEscapeState(returnNode -> ArgEscape)
+          if (!updatedCG.nodes.contains(returnNode)) {
+            // there was no 'returnNode' in the CG, so add 'returnNode' to CG and mark it as GlobalEscape!
+            updatedCG = updatedCG.addNode(returnNode).updateEscapeState(returnNode -> GlobalEscape)
+          }
           frame.stack.pop(i.consumeStack(frame.cpg)).push(Reference(objectType, returnNode))
       }
 
@@ -36,8 +38,7 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
     }
   }
 
-  def findOrCreateReturnNode(summary: ConnectionGraph,
-                             method: Method): PhantomReturnNode = {
+  def findOrCreateReturnNode(summary: ConnectionGraph, method: Method): PhantomReturnNode = {
     summary.nodes
       .find(n => n.id == method.id && n.isInstanceOf[PhantomReturnNode])
       .map(_.asInstanceOf[PhantomReturnNode])
@@ -144,7 +145,7 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
     val isRecursive = recursiveSuccessors.contains(currentMethod)
 
     if (!methodToInvoke.isDefined) {
-      ConnectionGraph.empty()
+      markArgumentsAsGlobalEscape(methodToInvoke, frame)
     } else if (!isRecursive) {
       methodToInvoke.summary
     } else {
@@ -165,6 +166,25 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
                            findPredecessors = block => block.predecessors)
       }
     }
+  }
+
+  def markArgumentsAsGlobalEscape(m: Method, frame: Frame): ConnectionGraph = {
+    // we must reverse the argument types since the slots on the stack are also in reverse order.
+    val argumentTypes = m.argumentTypes.reverse
+
+    val (connectionGraph, _) = argumentTypes.foldLeft((ConnectionGraph.empty(), frame.stack)) {
+      case ((cg, stack), argumentType: Type) =>
+        val updatedCG = argumentType match {
+          case _: BasicType =>
+            cg
+          case _: ReferenceType =>
+            val reference = stack.peek.asInstanceOf[Reference]
+            val node = reference.node
+            cg.addNode(node).updateEscapeState(node -> GlobalEscape)
+        }
+        (updatedCG, stack.pop(argumentType.getSize))
+    }
+    connectionGraph
   }
 
 }

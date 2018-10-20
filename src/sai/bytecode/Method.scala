@@ -2,7 +2,7 @@ package sai.bytecode
 
 import bytecode._
 import ea._
-import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList}
+import org.apache.bcel.generic.{ConstantPoolGen, InstructionHandle, InstructionList, Type}
 import sai.bytecode.instruction.{EntryPoint, ExitPoint, Instruction}
 import sai.vm.Reference
 import vm.Frame
@@ -82,6 +82,13 @@ class Method(bcelMethod: org.apache.bcel.classfile.Method,
     else
       argReferences(1, bcelMethod.getArgumentTypes.toList) +
         (0 -> Reference(clazz.classType, LocalReferenceNode(this, 0)))
+
+  def argumentTypes: List[Type] = {
+    if (bcelMethod.isStatic)
+      bcelMethod.getArgumentTypes.toList
+    else
+      clazz.classType :: bcelMethod.getArgumentTypes.toList
+  }
 
   def maxLocals: Int = bcelMethod.getCode.getMaxLocals
 
