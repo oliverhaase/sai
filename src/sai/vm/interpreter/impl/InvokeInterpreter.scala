@@ -1,13 +1,11 @@
 package vm.interpreter.impl
 
 import ea._
-import org.apache.bcel.Const
-import org.apache.bcel.classfile.{ConstantInvokeDynamic, ConstantNameAndType}
 import org.apache.bcel.generic.{BasicType, _}
-import sai.bytecode.{Clazz, Method, Program}
-import sai.vm.{DontCare, OpStack, Reference}
-import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
+import sai.bytecode.{Method, Program}
+import sai.vm.{DontCare, Reference}
 import vm.Frame
+import vm.interpreter.{InstructionInterpreter, InterpreterBuilder}
 
 private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeInstruction] {
 
@@ -19,7 +17,7 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
 
       // calculate summary for 'method to invoke'
       val resultSummary = calculateSummary(methodToInvoke, frame)
-      var updatedCG     = frame.cg.merge(resultSummary)
+      var updatedCG = frame.cg.merge(resultSummary)
 
       // update the stack
       val updatedStack = i.getReturnType(frame.cpg) match {
@@ -179,7 +177,7 @@ private[interpreter] object InvokeInterpreter extends InterpreterBuilder[InvokeI
             cg
           case _: ReferenceType =>
             val reference = stack.peek.asInstanceOf[Reference]
-            val node = reference.node
+            val node      = reference.node
             cg.addNode(node).updateEscapeState(node -> GlobalEscape)
         }
         (updatedCG, stack.pop(argumentType.getSize))

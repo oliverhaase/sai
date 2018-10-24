@@ -43,6 +43,5 @@ object PhantomReferenceNode {
 }
 
 object PhantomObjectNode {
-  def apply(referenceNode: ReferenceNode): PhantomObjectNode =
-    new PhantomObjectNode(s"PO/${referenceNode.id}")
+  def apply(referenceNode: ReferenceNode): PhantomObjectNode = new PhantomObjectNode(referenceNode.id)
 }

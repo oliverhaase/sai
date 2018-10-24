@@ -33,22 +33,31 @@ object Helper {
   }
 
   /**
-    * Determine escape state for a given object type.
-    * If an object implements the runnable interface,
-    * the escape state is GlobalEscape,
-    * otherwise the escape state is NoEscape.
+    * Determine escape state by a given object type.
     */
   def determineEscapeState(objectType: ObjectType): EscapeState = {
+    if (implementsRunnableInterface(objectType) ||
+        overridesFinalizeMethod(objectType) ||
+        isThread(objectType)) {
+      GlobalEscape
+    } else {
+      NoEscape
+    }
+  }
+
+  private def isThread(objectType: ObjectType): Boolean = {
+    val clazz = Program.getClass(objectType.getClassName)
+    (clazz :: clazz.superClasses).exists(_.name == classOf[java.lang.Thread].getCanonicalName)
+  }
+
+  def implementsRunnableInterface(objectType: ObjectType): Boolean = {
     val clazz             = Class.forName(objectType.getClassName)
     val interfaces        = clazz.getInterfaces
     val runnableInterface = classOf[java.lang.Runnable]
-    if (interfaces.contains(runnableInterface) || overridesFinalizeMethod(objectType))
-      GlobalEscape
-    else
-      NoEscape
+    interfaces.contains(runnableInterface)
   }
 
-  def overridesFinalizeMethod(objectType: ObjectType): Boolean = {
+  private def overridesFinalizeMethod(objectType: ObjectType): Boolean = {
     val clazz = Program.getClass(objectType.getClassName)
     // check if clazz or any superclass (other than 'Object' = dropRight(1)) overrides the finalize method
     (clazz :: clazz.superClasses)
